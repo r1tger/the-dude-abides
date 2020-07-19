@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from .note import Note
 
 from graph_tools import Graph
@@ -179,3 +181,17 @@ class Zettelkasten(object):
         dist, prev = g.dijkstra(v)
         for u, h in sorted(dist.items(), key=lambda x: x[1], reverse=True):
             yield((h, g.get_vertex_attribute(u, ATTR_NOTE)))
+
+    def find(self, s):
+        """Search for all notes containing term s.
+
+        :s: search term
+        :returns: generator of Note
+
+        """
+        g = self.get_graph()
+        # Get all vertices
+        for v in g.vertices():
+            note = g.get_vertex_attribute(v, ATTR_NOTE)
+            if note.find(s):
+                yield(note)

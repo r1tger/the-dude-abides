@@ -13,7 +13,7 @@ setup(
     install_requires=[
         'ReParser',
         'graph-tools',
-        'pyaml'
+        'ngram'
     ],
     entry_points={'console_scripts': [
         'thedudeabides = thedudeabides.__main__:main',

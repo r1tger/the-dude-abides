@@ -55,6 +55,7 @@ def parse():
                         help='show the registry of all notes')
     parser.add_argument('-c', '--collect', type=int,
                         help='collect associated notes')
+    parser.add_argument('-f', '--find', help='search for a specific word')
     parser.add_argument('-t', '--train-of-thought', type=int,
                         help='collect associated notes')
     parser.add_argument('--map', action='store_true',
@@ -158,12 +159,19 @@ def registry(zettelkasten):
 
 def inbox(zettelkasten):
     """TODO: Docstring for register.
+
     :returns: TODO
 
     """
     # Get all notes without links (inbox)
     for c, note in zettelkasten.inbox():
         log.info('{v:>5}. {t} [{c}]'.format(v=note.get_id(), t=note, c=c))
+
+
+def find(s, zettelkasten):
+    """ Find any Notes that match search term s. """
+    for note in zettelkasten.find(s):
+        log.info('{v:>5}. {t}'.format(v=note.get_id(), t=note))
 
 
 def main():
@@ -185,6 +193,8 @@ def main():
             edit_note(zettelkasten.get_note(options.edit), zettelkasten)
         if options.registry:
             registry(zettelkasten)
+        if options.find:
+            find(options.find, zettelkasten)
         if options.train_of_thought:
             train_of_thought(options.train_of_thought, zettelkasten,
                              options.output)

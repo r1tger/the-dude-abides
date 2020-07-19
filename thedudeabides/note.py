@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+from ngram import NGram
 import re
 from reparser import Parser, Token, MatchGroup
 
@@ -141,6 +144,18 @@ class Note(object):
         links = [(x.text, int(x.params['link_target'])) for x in text
                  if 'link_target' in x.params]
         return links
+
+    def find(self, s):
+        """Search for a specific term in the text of the note. Performs a fuzzy
+        match on the body of the Note.
+
+        :s: search term
+        :returns: True if s is found in Note, False if not
+
+        """
+        n = NGram(self.get_body().split(), key=lambda x: x.lower())
+        # Try to match term s with a similarity of 0.5
+        return True if n.find(s.lower(), 0.5) is not None else False
 
     @staticmethod
     def markdown(tag):
