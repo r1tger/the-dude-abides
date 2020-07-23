@@ -5,6 +5,7 @@ from .note import Note
 from graph_tools import Graph
 from os import walk
 from os.path import join, splitext, expanduser, isdir
+from pprint import pprint
 
 import logging
 log = logging.getLogger(__name__)
@@ -149,6 +150,20 @@ class Zettelkasten(object):
         vertices = [(len(g.edges_at(v)), v) for v in g.vertices()]
         for c, v in [(c, v) for c, v in vertices if c == 0]:
             yield((c, g.get_vertex_attribute(v, ATTR_NOTE)))
+
+    def index(self):
+        """Create a dynamic index of clusters of information. """
+        explored = []
+        # Get all notes in the zettelkasten
+        for c, n in self.registry():
+            if n in explored:
+                continue
+            # Collect all related notes for this Note
+            cluster = list(self.collect(n.get_id()))
+            # Add to available clusters
+            explored += cluster
+            # Try to store as little context as possible
+            yield(cluster)
 
     def collect(self, v):
         """Collect all Notes associated with the provided id. All edges are

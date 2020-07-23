@@ -67,9 +67,15 @@ class Note(object):
 
     def __eq__(self, other):
         """Compare Note instances by unique identifier.
-
         """
         return self.ident == other
+
+    def __lt__(self, other):
+        """TODO: Docstring for __lt__.
+        """
+        if isinstance(other, Note):
+            other = other.get_id()
+        return self.ident < other
 
     def __repr__(self):
         """Return the Note title if cast to string().

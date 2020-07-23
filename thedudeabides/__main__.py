@@ -49,10 +49,14 @@ def parse():
     # Note specific
     parser.add_argument('--create', action='store_true',
                         help='create a new note')
+    parser.add_argument('-d', '--distance', type=int,
+                        help='Maximum distance from source')
     parser.add_argument('-e', '--edit', type=int,
                         help='edit a note')
     parser.add_argument('-r', '--registry', action='store_true',
                         help='show the registry of all notes')
+    parser.add_argument('-i', '--index', action='store_true',
+                        help='show an index of clustered notes')
     parser.add_argument('-c', '--collect', type=int,
                         help='collect associated notes')
     parser.add_argument('-f', '--find', help='search for a specific word')
@@ -73,10 +77,10 @@ def output_note(output):
 
     """
     editor = environ['EDITOR'] if 'EDITOR' in environ else 'vim'
-    return run([editor, '-'], input=output, text=True)
+    return run([editor, '-c', 'set ft=markdown', '-'], input=output, text=True)
 
 
-def train_of_thought(v, zettelkasten, output=None):
+def train_of_thought(v, zettelkasten, distance=None, output=None):
     """Display the train of though for a Note.
 
     :v: id of Note to start from
@@ -87,6 +91,9 @@ def train_of_thought(v, zettelkasten, output=None):
     """
     out = ''
     for h, note in zettelkasten.train_of_thought(v):
+        if distance is not None and h >= distance:
+            log.debug('{i:>5}. SKIPPED'.format(i=note.get_id()))
+            continue
         log.info('{i:>5}. {t} [{h}]'.format(i=note.get_id(), t=note, h=h))
         out += note.get_body() + '\n'
     if output:
@@ -158,7 +165,7 @@ def registry(zettelkasten):
 
 
 def inbox(zettelkasten):
-    """TODO: Docstring for register.
+    """TODO: Docstring for inbox.
 
     :returns: TODO
 
@@ -166,6 +173,26 @@ def inbox(zettelkasten):
     # Get all notes without links (inbox)
     for c, note in zettelkasten.inbox():
         log.info('{v:>5}. {t} [{c}]'.format(v=note.get_id(), t=note, c=c))
+
+
+def index(zettelkasten, output=None):
+    """TODO: Docstring for index.
+
+    :zettelkasten: TODO
+    :returns: TODO
+
+    """
+    log.info('Collecting Notes')
+    # Get all clusters of Notes
+    out = '# Generated index\n'
+    for i, c in enumerate(zettelkasten.index(), start=1):
+        log.info('{s:-^80}'.format(s=' Cluster: {i:0>5} '.format(i=i)))
+        out += '\n## Cluster: {i:0>5}\n\n'.format(i=i)
+        for note in sorted(c, reverse=True):
+            log.info('{v:>5}. {t}'.format(v=note.get_id(), t=note))
+            out += '* [{t}]({v})'.format(v=note.get_id(), t=note) + '\n'
+    if output:
+        output_note(out)
 
 
 def find(s, zettelkasten):
@@ -193,11 +220,13 @@ def main():
             edit_note(zettelkasten.get_note(options.edit), zettelkasten)
         if options.registry:
             registry(zettelkasten)
+        if options.index:
+            index(zettelkasten, options.output)
         if options.find:
             find(options.find, zettelkasten)
         if options.train_of_thought:
             train_of_thought(options.train_of_thought, zettelkasten,
-                             options.output)
+                             options.distance, options.output)
         if options.map:
             map_notes(zettelkasten, options.output)
         if options.inbox:
