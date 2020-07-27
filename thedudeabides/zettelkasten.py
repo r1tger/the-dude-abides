@@ -115,6 +115,18 @@ class Zettelkasten(object):
         for c, v in sorted(vertices, key=lambda x: x[0], reverse=True):
             yield((c, g.get_vertex_attribute(v, ATTR_NOTE)))
 
+    def get_edges_count(self, v):
+        """Count both incoming and outgoing edges for id
+
+        :v: ID of note
+        :returns: tuple of (from, to)
+
+        """
+        if not self.exists(v):
+            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
+        g = self.get_graph()
+        return (len(g.edges_from(v)), len(g.edges_to(v)))
+
     def get_next_note(self):
         """Create a Note for the next available ID. The Note can be used to
         create new files in the Zettelkasten directory.

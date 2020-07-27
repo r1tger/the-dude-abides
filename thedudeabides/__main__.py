@@ -190,7 +190,11 @@ def index(zettelkasten, output=None):
         out += '\n## Cluster: {i:0>5}\n\n'.format(i=i)
         for note in sorted(c, reverse=True):
             log.info('{v:>5}. {t}'.format(v=note.get_id(), t=note))
-            out += '* [{t}]({v})'.format(v=note.get_id(), t=note) + '\n'
+            f, t = zettelkasten.get_edges_count(note.get_id())
+            out += '* [{ti}]({v}) [in:{t}, out:{f}]'.format(v=note.get_id(),
+                                                            ti=note,
+                                                            f=f,
+                                                            t=t) + '\n'
     if output:
         output_note(out)
 
