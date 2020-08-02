@@ -2,7 +2,7 @@
 
 from ngram import NGram
 from yaml import load, FullLoader
-import re
+from jinja2 import Environment
 
 from markdown_it import MarkdownIt
 from markdown_it.token import nest_tokens
@@ -10,6 +10,31 @@ from markdown_it.extensions.front_matter import front_matter_plugin
 
 import logging
 log = logging.getLogger(__name__)
+
+HTML = """<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8"/>
+        <title>{{ title }}</title>
+        <link rel="stylesheet" href="main.css"/>
+        <link href="/favicon.ico" rel="shortcut icon"/>
+        <meta name="description" content="{{ title }}"/>
+        <!--[if IE]>
+        <script
+            src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+    </head>
+    <body class="index">
+        <section class="index-content">
+            <h1>{{ title }}</h1>
+            {{ content }}
+        </section>
+        <footer>
+            <a href="index.html">Index</a>
+        </footer>
+    </body>
+</html>
+"""
 
 
 class Note(object):
@@ -19,31 +44,31 @@ class Note(object):
 
     """
 
-    def __init__(self, ident, filename):
+    def __init__(self, ident, filename=None, source=None):
         """Constructor.
 
         :ident: unique identifier for the Note
         :filename: filename of Note file. Can be relative or absolute
+        :source: contents for Note. If not provided, filename is loaded on
+                 first use
 
         """
         self.ident = ident
         self.filename = filename
-        self.contents = None
-        self.tokens = None
+        self.contents = source
         self.front_matter = None
 
-    def parse(self):
-        """Parse the Note contents for Markdown syntax. Mainly used to find
-        links to other Notes, but can provide more information if needed in the
-        future.
+        def render_link_open(self, tokens, idx, options, env):
+            """Change any links to include '.html'. """
+            ai = tokens[idx].attrIndex('target')
+            target = '{t}.html'.format(t=tokens[idx].attrs[ai][1])
+            tokens[idx].attrs[ai][1] = target
+            return self.renderToken(tokens, idx, options, env)
 
-        :returns: generator of Segment
-
-        """
-        if self.tokens is None:
-            md = (MarkdownIt('commonmark').use(front_matter_plugin))
-            self.tokens = md.parse(self.get_body())
-        return self.tokens
+        # Parse the contents of the note
+        self.md = (MarkdownIt('commonmark').use(front_matter_plugin))
+        self.md.add_render_rule('link_open', render_link_open)
+        self.T = self.md.parse(self.get_body())
 
     def __eq__(self, other):
         """Compare Note instances by unique identifier.
@@ -102,10 +127,12 @@ class Note(object):
 
         """
         if self.front_matter is None:
-            tokens = self.parse()
-            front_matter = [t for t in tokens if t.type == 'front_matter'][0]
-            # Load front matter as YAML syntax
-            self.front_matter = load(front_matter.content, Loader=FullLoader)
+            try:
+                fm = [t for t in self.T if t.type == 'front_matter'][0]
+                # Load front matter as YAML syntax
+                self.front_matter = load(fm.content, Loader=FullLoader)
+            except IndexError:
+                self.front_matter = {}
         if tag not in self.front_matter:
             raise ValueError('Tag "{t}" not found'.format(t=tag))
         return self.front_matter[tag]
@@ -127,14 +154,25 @@ class Note(object):
         """
         text, href = '', ''
         # Only process children of inline tokens
-        for c in [t.children for t in self.parse() if t.type == 'inline']:
+        for c in [t.children for t in self.T if t.type == 'inline']:
             for t in c:
                 if t.type == 'link_open':
                     href = int(t.attrs[0][1])
+                    # href = int(t.attrIndex('target'))
                 if t.type == 'text':
                     text = t.content
                 if t.type == 'link_close':
                     yield((text, href))
+
+    def render(self):
+        """Render the note to an HTML file.
+
+        :returns: HTML representation for the Note.
+
+        """
+        env = Environment().from_string(HTML)
+        return env.render(title=self.get_title(),
+                          content=self.md.render(self.get_body()))
 
     def find(self, s):
         """Search for a specific term in the text of the note. Performs a fuzzy

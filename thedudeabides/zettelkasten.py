@@ -5,13 +5,16 @@ from .note import Note
 from graph_tools import Graph
 from os import walk
 from os.path import join, splitext, expanduser, isdir
-from pprint import pprint
+# from pprint import pprint
+from datetime import datetime
 
 import logging
 log = logging.getLogger(__name__)
 
 ATTR_NOTE = 'note'
 EXT_NOTE = 'md'
+
+ITEM = '* [{ti}]({v}) [in:{t}, out:{f}]'
 
 
 class Zettelkasten(object):
@@ -222,3 +225,42 @@ class Zettelkasten(object):
             note = g.get_vertex_attribute(v, ATTR_NOTE)
             if note.find(s):
                 yield(note)
+
+    def render(self, output):
+        """Write all notes to disk, including an index with clusters. TODO: add
+        backlinks for each Note from the graph.
+
+        :output: output directory, must exist
+
+        """
+        output = expanduser(output)
+        if not isdir(output):
+            raise ValueError('Invalid output directory provided')
+        g = self.get_graph()
+        # Write all Notes to disk
+        for v in g.vertices():
+            out = '## Ref.' + '\n'
+            # Find all Notes that refer to this Note
+            edges_to = set([i for l in self.g.edges_to(v) for i in l])
+            for u in edges_to:
+                note = g.get_vertex_attribute(u, ATTR_NOTE)
+                f, t = self.get_edges_count(note.get_id())
+                out += ITEM.format(v=note.get_id(), ti=note, f=f, t=t) + '\n'
+            # Write Notes to disk
+            with open(join(output, '{v}.html'.format(v=v)), 'w') as f:
+                note = g.get_vertex_attribute(v, ATTR_NOTE)
+                if len(edges_to) > 0:
+                    note = Note(0, source=note.get_body() + out)
+                f.write(note.render())
+        now = datetime.utcnow().isoformat()
+        out = '---\ntitle: "Index"\ndate: "{t}"\n---\n'.format(t=now)
+        # Retrieve all clusters of notes
+        for i, c in enumerate(self.index(), start=1):
+            out += '\n## Cluster: {i:0>5}\n\n'.format(i=i)
+            for note in sorted(c, reverse=True):
+                f, t = self.get_edges_count(note.get_id())
+                out += ITEM.format(v=note.get_id(), ti=note, f=f, t=t) + '\n'
+        # Write the index to disk
+        index = Note(0, source=out)
+        with open(join(output, 'index.html'), 'w') as f:
+            f.write(index.render())

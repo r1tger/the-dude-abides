@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='thedudeabides',
-    version='0.2.0',
+    version='0.3.0',
     description='The dude abides',
     url='https://github.com/r1tger/the-dude-abides',
     author='Ritger Teunissen',
@@ -14,7 +14,8 @@ setup(
         'graph-tools',
         'ngram',
         'pyyaml',
-        'markdown-it-py'
+        'markdown-it-py',
+        'jinja2'
     ],
     entry_points={'console_scripts': [
         'thedudeabides = thedudeabides.__main__:main',

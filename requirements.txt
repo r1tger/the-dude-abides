@@ -2,3 +2,4 @@ graph-tools
 ngram
 pyyaml
 markdown-it-py
+jinja2

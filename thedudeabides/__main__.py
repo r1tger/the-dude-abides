@@ -66,6 +66,7 @@ def parse():
                         help='map of notes in graphviz dot format')
     parser.add_argument('--inbox', action='store_true',
                         help='inbox containing unreferenced notes')
+    parser.add_argument('--render', help='Render all notes as HTML')
     # Parse options
     return parser.parse_args()
 
@@ -107,6 +108,18 @@ def map_notes(zettelkasten, output=None):
     # Create the graph and write to [output]
     g = zettelkasten.get_graph()
     output_note(g.export_dot())
+
+
+def render_notes(zettelkasten, output):
+    """TODO: Docstring for render_notes.
+
+    :zettelkasten: TODO
+    :output: TODO
+    :returns: TODO
+
+    """
+    log.info('Rendering notes')
+    zettelkasten.render(output)
 
 
 def collect_note(v, zettelkasten, output=None):
@@ -231,6 +244,8 @@ def main():
         if options.train_of_thought:
             train_of_thought(options.train_of_thought, zettelkasten,
                              options.distance, options.output)
+        if options.render:
+            render_notes(zettelkasten, options.render)
         if options.map:
             map_notes(zettelkasten, options.output)
         if options.inbox:
