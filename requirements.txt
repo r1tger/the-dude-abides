@@ -1,3 +1,4 @@
-ReParser
 graph-tools
 ngram
+pyyaml
+markdown-it-py

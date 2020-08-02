@@ -11,9 +11,10 @@ setup(
     # setup_requires=['pytest-runner'],
     # tests_require=['pytest>=3.0.0', 'freezegun'],
     install_requires=[
-        'ReParser',
         'graph-tools',
-        'ngram'
+        'ngram',
+        'pyyaml',
+        'markdown-it-py'
     ],
     entry_points={'console_scripts': [
         'thedudeabides = thedudeabides.__main__:main',

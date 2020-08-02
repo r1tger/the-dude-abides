@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from ngram import NGram
+from yaml import load, FullLoader
 import re
-from reparser import Parser, Token, MatchGroup
+
+from markdown_it import MarkdownIt
+from markdown_it.token import nest_tokens
+from markdown_it.extensions.front_matter import front_matter_plugin
 
 import logging
 log = logging.getLogger(__name__)
@@ -15,15 +19,6 @@ class Note(object):
 
     """
 
-    boundary_chars = r'\s`!()\[\]{{}};:\'".,<>?«»“”‘’*_~='
-    b_left = r'(?:(?<=[' + boundary_chars + r'])|(?<=^))'  # Lookbehind
-    b_right = r'(?:(?=[' + boundary_chars + r'])|(?=$))'   # Lookahead
-
-    markdown_start = b_left + r'(?<!\\){tag}(?!\s)(?!{tag})'
-    markdown_end = r'(?<!{tag})(?<!\s)(?<!\\){tag}' + b_right
-    markdown_link = r'(?<!\\)\[(?P<link>.+?)\]\((?P<url>.+?)\)'
-    newline = r'\n|\r\n'
-
     def __init__(self, ident, filename):
         """Constructor.
 
@@ -34,6 +29,8 @@ class Note(object):
         self.ident = ident
         self.filename = filename
         self.contents = None
+        self.tokens = None
+        self.front_matter = None
 
     def parse(self):
         """Parse the Note contents for Markdown syntax. Mainly used to find
@@ -43,27 +40,10 @@ class Note(object):
         :returns: generator of Segment
 
         """
-        tokens = [
-            Token('bi1',  *Note.markdown(r'\*\*\*'), is_bold=True,
-                  is_italic=True),
-            Token('bi2',  *Note.markdown(r'___'),    is_bold=True,
-                  is_italic=True),
-            Token('b1',   *Note.markdown(r'\*\*'),   is_bold=True),
-            Token('b2',   *Note.markdown(r'__'),     is_bold=True),
-            Token('i1',   *Note.markdown(r'\*'),     is_italic=True),
-            Token('i2',   *Note.markdown(r'_'),      is_italic=True),
-            Token('pre3', *Note.markdown(r'```'),    skip=True),
-            Token('pre2', *Note.markdown(r'``'),     skip=True),
-            Token('pre1', *Note.markdown(r'`'),      skip=True),
-            Token('s',    *Note.markdown(r'~~'),     is_strikethrough=True),
-            Token('u',    *Note.markdown(r'=='),     is_underline=True),
-            Token('link', Note.markdown_link, text=MatchGroup('link'),
-                  link_target=MatchGroup('url')),
-            Token('br', Note.newline, text='\n', segment_type="LINE_BREAK")
-        ]
-        # Parse the contents of the note
-        parser = Parser(tokens)
-        return parser.parse(self.get_body())
+        if self.tokens is None:
+            md = (MarkdownIt('commonmark').use(front_matter_plugin))
+            self.tokens = md.parse(self.get_body())
+        return self.tokens
 
     def __eq__(self, other):
         """Compare Note instances by unique identifier.
@@ -86,9 +66,7 @@ class Note(object):
         return self.get_title()
 
     def get_body(self):
-        """Get the body of the note. A later addition may be to distinguish
-        between body and header, but YAML parsing needs to be sorted out first.
-        See Note::get_tag() for more information.
+        """Get the body of the note. See Note::get_tag() for more information.
 
         :returns: body of Note (as-is, no parsing)
 
@@ -117,18 +95,20 @@ class Note(object):
 
     def get_tag(self, tag):
         """Get a tag by name from the Note. YAML is (kinda) used for Note
-        structure, but not entirely to simplify editing of Notes. Tags are
-        supported, but parsed in a _very_ lazy manner.
+        structure, but not entirely to simplify editing of Notes.
 
         :tag: tag name of value to retrieve
         :returns: value for tag
 
         """
-        tag = '{t}: '.format(t=tag)
-        for t in [s.text for s in self.parse()]:
-            # Lazy parsing: find first match for tag and return without quotes
-            if t.startswith(tag):
-                return t.split(tag)[1][1:-1]
+        if self.front_matter is None:
+            tokens = self.parse()
+            front_matter = [t for t in tokens if t.type == 'front_matter'][0]
+            # Load front matter as YAML syntax
+            self.front_matter = load(front_matter.content, Loader=FullLoader)
+        if tag not in self.front_matter:
+            raise ValueError('Tag "{t}" not found'.format(t=tag))
+        return self.front_matter[tag]
 
     def get_title(self):
         """Get the title of the Note. Title is stored as a tag in the header.
@@ -145,11 +125,16 @@ class Note(object):
         :returns: list of tuple (link_name, link_target)
 
         """
-        text = self.parse()
-        # pprint([(segment.text, segment.params) for segment in text])
-        links = [(x.text, int(x.params['link_target'])) for x in text
-                 if 'link_target' in x.params]
-        return links
+        text, href = '', ''
+        # Only process children of inline tokens
+        for c in [t.children for t in self.parse() if t.type == 'inline']:
+            for t in c:
+                if t.type == 'link_open':
+                    href = int(t.attrs[0][1])
+                if t.type == 'text':
+                    text = t.content
+                if t.type == 'link_close':
+                    yield((text, href))
 
     def find(self, s):
         """Search for a specific term in the text of the note. Performs a fuzzy
@@ -162,20 +147,3 @@ class Note(object):
         n = NGram(self.get_body().split(), key=lambda x: x.lower())
         # Try to match term s with a similarity of 0.5
         return True if n.find(s.lower(), 0.5) is not None else False
-
-    @staticmethod
-    def markdown(tag):
-        """Return sequence of start and end regex patterns for simple Markdown
-           tag
-
-        """
-        return (Note.markdown_start.format(tag=tag),
-                Note.markdown_end.format(tag=tag))
-
-    @staticmethod
-    def url_complete(url):
-        """If URL doesn't start with protocol, prepend it with http://
-
-        """
-        url_proto_regex = re.compile(r'(?i)^[a-z][\w-]+:/{1,3}')
-        return url if url_proto_regex.search(url) else 'http://' + url
