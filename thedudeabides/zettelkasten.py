@@ -7,6 +7,7 @@ from os import walk
 from os.path import join, splitext, expanduser, isdir
 # from pprint import pprint
 from datetime import datetime
+from jinja2 import Environment
 
 import logging
 log = logging.getLogger(__name__)
@@ -14,7 +15,38 @@ log = logging.getLogger(__name__)
 ATTR_NOTE = 'note'
 EXT_NOTE = 'md'
 
-ITEM = '* [{ti}]({v}) [in:{t}, out:{f}]'
+NOTE_NEW = """---
+title: "{{ title }}"
+date: "{{ date }}"
+---
+
+"""
+
+NOTE_REFS = """{{ contents }}
+{% if notes|length > 0 %}
+## Ref.
+
+{% for note in notes|sort(reverse=True) %}
+* [{{ note }}]({{ note.get_id() }})
+{% endfor %}
+{% endif %}
+
+"""
+
+NOTE_INDEX = """---
+title: "Index"
+date: "{{ date }}"
+---
+
+{% for cluster in clusters %}
+## Cluster: {{ '%03d' % (loop.index) }}
+
+{% for note in cluster|sort(reverse=True) %}
+* [{{ note }}]({{ note.get_id() }})
+{% endfor %}
+
+{% endfor %}
+"""
 
 
 class Zettelkasten(object):
@@ -130,19 +162,28 @@ class Zettelkasten(object):
         g = self.get_graph()
         return (len(g.edges_from(v)), len(g.edges_to(v)))
 
-    def get_next_note(self):
-        """Create a Note for the next available ID. The Note can be used to
-        create new files in the Zettelkasten directory.
+    def create_note(self, title=''):
+        """Create a new Note using a template. Does not write the note to disk.
 
+        :title: Title for note
         :returns: Note
 
         """
-        n = list(self.get_notes())
+        # Create contents of new Note
+        env = Environment(trim_blocks=True).from_string(NOTE_NEW)
+        contents = env.render(title=title, date=datetime.utcnow().isoformat())
+        # Create Note
+        g = self.get_graph()
+        n = g.vertices()
         # Get largest Note ID, increment by 1
-        v = max([v for v, filename in n]) + 1 if len(n) > 0 else 1
+        v = max(n) + 1 if len(n) > 0 else 1
         # Compose filename
         filename = join(self.zettelkasten, '{v}.{e}'.format(v=v, e=EXT_NOTE))
-        return Note(v, filename)
+        note = Note(v, filename, contents)
+        # Add note to graph, so Zettelkasten::exists() works
+        g.add_vertex(v)
+        g.set_vertex_attribute(v, ATTR_NOTE, note)
+        return note
 
     def exists(self, v):
         """Check if a Note with the provided id exists in the graph.
@@ -179,6 +220,16 @@ class Zettelkasten(object):
             explored += cluster
             # Try to store as little context as possible
             yield(cluster)
+
+    def get_index(self):
+        """Create a markdown representation of the index of notes.
+
+        :returns: Note
+
+        """
+        env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
+        return Note(0, contents=env.render(clusters=self.index(),
+                                           date=datetime.utcnow().isoformat()))
 
     def collect(self, v):
         """Collect all Notes associated with the provided id. All edges are
@@ -238,29 +289,18 @@ class Zettelkasten(object):
             raise ValueError('Invalid output directory provided')
         g = self.get_graph()
         # Write all Notes to disk
-        for v in g.vertices():
-            out = '## Ref.' + '\n'
+        for n in [self.get_note(v) for v in g.vertices()]:
             # Find all Notes that refer to this Note
-            edges_to = set([i for l in self.g.edges_to(v) for i in l])
-            for u in edges_to:
-                note = g.get_vertex_attribute(u, ATTR_NOTE)
-                f, t = self.get_edges_count(note.get_id())
-                out += ITEM.format(v=note.get_id(), ti=note, f=f, t=t) + '\n'
-            # Write Notes to disk
-            with open(join(output, '{v}.html'.format(v=v)), 'w') as f:
-                note = g.get_vertex_attribute(v, ATTR_NOTE)
-                if len(edges_to) > 0:
-                    note = Note(0, source=note.get_body() + out)
+            edges_to = set([i for l in self.g.edges_to(n.get_id()) for i in l])
+            notes = [self.get_note(v) for v in edges_to]
+            # Render HTML template
+            env = Environment(trim_blocks=True).from_string(NOTE_REFS)
+            note = Note(0, contents=env.render(contents=n.get_body(),
+                                               notes=notes))
+            # Write to disk
+            filename = join(output, '{v}.html'.format(v=n.get_id()))
+            with open(filename, 'w') as f:
                 f.write(note.render())
-        now = datetime.utcnow().isoformat()
-        out = '---\ntitle: "Index"\ndate: "{t}"\n---\n'.format(t=now)
-        # Retrieve all clusters of notes
-        for i, c in enumerate(self.index(), start=1):
-            out += '\n## Cluster: {i:0>5}\n\n'.format(i=i)
-            for note in sorted(c, reverse=True):
-                f, t = self.get_edges_count(note.get_id())
-                out += ITEM.format(v=note.get_id(), ti=note, f=f, t=t) + '\n'
         # Write the index to disk
-        index = Note(0, source=out)
         with open(join(output, 'index.html'), 'w') as f:
-            f.write(index.render())
+            f.write(self.get_index().render())

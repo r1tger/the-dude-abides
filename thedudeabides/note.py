@@ -44,18 +44,18 @@ class Note(object):
 
     """
 
-    def __init__(self, ident, filename=None, source=None):
+    def __init__(self, ident, filename=None, contents=None):
         """Constructor.
 
         :ident: unique identifier for the Note
         :filename: filename of Note file. Can be relative or absolute
-        :source: contents for Note. If not provided, filename is loaded on
+        :contents: contents for Note. If not provided, filename is loaded on
                  first use
 
         """
         self.ident = ident
         self.filename = filename
-        self.contents = source
+        self.contents = contents
         self.front_matter = None
 
         def render_link_open(self, tokens, idx, options, env):

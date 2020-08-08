@@ -47,12 +47,12 @@ def parse():
     parser.add_argument('-o', '--output', action='store_true', default=False,
                         help='Write the output to disk')
     # Note specific
-    parser.add_argument('--create', action='store_true',
-                        help='create a new note')
     parser.add_argument('-d', '--distance', type=int,
                         help='Maximum distance from source')
+    parser.add_argument('--create', default='',
+                        help='create a new note, providing the title')
     parser.add_argument('-e', '--edit', type=int,
-                        help='edit a note')
+                        help='edit a note by ID')
     parser.add_argument('-r', '--registry', action='store_true',
                         help='show the registry of all notes')
     parser.add_argument('-i', '--index', action='store_true',
@@ -153,16 +153,15 @@ def edit_note(note, zettelkasten):
     call([editor, note.get_filename()])
 
 
-def create_note(zettelkasten):
+def create_note(zettelkasten, title):
     """TODO: Docstring for create_note.
     :returns: TODO
 
     """
-    note = zettelkasten.get_next_note()
+    note = zettelkasten.create_note(title)
     # Write template to file
-    now = datetime.utcnow().isoformat()
     with open(note.get_filename(), 'w') as f:
-        f.write('---\ntitle: ""\ndate: "{t}"\n---\n'.format(t=now))
+        f.write(note.get_body())
     log.info('Created new note "{f}"'.format(f=note.get_filename()))
     # Edit the Note
     edit_note(note, zettelkasten)
@@ -188,7 +187,7 @@ def inbox(zettelkasten):
         log.info('{v:>5}. {t} [{c}]'.format(v=note.get_id(), t=note, c=c))
 
 
-def index(zettelkasten, output=None):
+def index(zettelkasten):
     """TODO: Docstring for index.
 
     :zettelkasten: TODO
@@ -196,20 +195,7 @@ def index(zettelkasten, output=None):
 
     """
     log.info('Collecting Notes')
-    # Get all clusters of Notes
-    out = '# Generated index\n'
-    for i, c in enumerate(zettelkasten.index(), start=1):
-        log.info('{s:-^80}'.format(s=' Cluster: {i:0>5} '.format(i=i)))
-        out += '\n## Cluster: {i:0>5}\n\n'.format(i=i)
-        for note in sorted(c, reverse=True):
-            log.info('{v:>5}. {t}'.format(v=note.get_id(), t=note))
-            f, t = zettelkasten.get_edges_count(note.get_id())
-            out += '* [{ti}]({v}) [in:{t}, out:{f}]'.format(v=note.get_id(),
-                                                            ti=note,
-                                                            f=f,
-                                                            t=t) + '\n'
-    if output:
-        output_note(out)
+    output_note(zettelkasten.get_index().get_body())
 
 
 def find(s, zettelkasten):
@@ -232,13 +218,13 @@ def main():
         if options.collect:
             collect_note(options.collect, zettelkasten, options.output)
         if options.create:
-            create_note(zettelkasten)
+            create_note(zettelkasten, options.create)
         if options.edit:
             edit_note(zettelkasten.get_note(options.edit), zettelkasten)
         if options.registry:
             registry(zettelkasten)
         if options.index:
-            index(zettelkasten, options.output)
+            index(zettelkasten)
         if options.find:
             find(options.find, zettelkasten)
         if options.train_of_thought:
