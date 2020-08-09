@@ -169,7 +169,6 @@ class Zettelkasten(object):
         :returns: Note
 
         """
-        # Create contents of new Note
         env = Environment(trim_blocks=True).from_string(NOTE_NEW)
         contents = env.render(title=title, date=datetime.utcnow().isoformat())
         # Create Note

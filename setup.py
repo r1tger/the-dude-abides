@@ -8,8 +8,6 @@ setup(
     author='Ritger Teunissen',
     author_email='github@ritger.nl',
     packages=['thedudeabides'],
-    # setup_requires=['pytest-runner'],
-    # tests_require=['pytest>=3.0.0', 'freezegun'],
     install_requires=[
         'graph-tools',
         'ngram',
