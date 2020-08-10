@@ -18,7 +18,46 @@ HTML = """<!DOCTYPE html>
         <title>{{ title }}</title>
         <link rel="stylesheet" href="main.css"/>
         <link href="/favicon.ico" rel="shortcut icon"/>
-        <meta name="description" content="{{ title }}"/>
+        <style type="text/css">
+            html {
+                min-height: 100%;
+            }
+            body {
+                width: 75%;
+                margin: auto;
+                font-size: medium;
+            }
+            footer {
+                border-top: 1px solid #d81e05;
+                padding: 0.5em 0 0 0;
+            }
+            a {
+                color: #d81e05;
+                font-family: 'Fira Code', sans-serif;
+                line-height: 1.5em;
+                text-decoration: none;
+            }
+            h1, h2, h3 {
+                font-family: 'Fira Code', sans-serif;
+                color: #d81e05;
+            }
+            h1 {
+                border-bottom: 1px solid #d81e05;
+                font-size: x-large;
+            }
+            h2 {
+                font-size: large;
+            }
+            h3 {
+                font-size: medium;
+            }
+            p, li {
+                color: #404040;
+                font-family: 'Fira Code', serif;
+                line-height: 1.5em;
+            }
+        </style>
+        <meta name="description" content="{{ title|e }}"/>
         <!--[if IE]>
         <script
             src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
@@ -26,7 +65,7 @@ HTML = """<!DOCTYPE html>
     </head>
     <body class="index">
         <section class="index-content">
-            <h1>{{ title }}</h1>
+            <h1>{{ title|e }}</h1>
             {{ content }}
         </section>
         <footer>

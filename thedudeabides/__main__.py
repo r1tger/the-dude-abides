@@ -4,7 +4,6 @@
 from .zettelkasten import Zettelkasten
 
 from argparse import ArgumentParser
-from datetime import datetime
 from os import environ
 # from pprint import pprint
 from subprocess import call, run
