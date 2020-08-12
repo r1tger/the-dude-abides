@@ -23,7 +23,7 @@ HTML = """<!DOCTYPE html>
                 min-height: 100%;
             }
             body {
-                width: 75%;
+                width: 80%;
                 margin: auto;
                 font-size: medium;
             }
