@@ -12,13 +12,13 @@ import logging
 log = logging.getLogger(__name__)
 
 HTML = """<!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
     <head>
         <meta charset="UTF-8"/>
         <title>{{ title }}</title>
         <link rel="stylesheet" href="main.css"/>
         <link href="/favicon.ico" rel="shortcut icon"/>
-        <style type="text/css">
+        <style>
             @import url('http://fonts.googleapis.com/css?family=Open+Sans:400,700');
             @import url('http://fonts.googleapis.com/css?family=PT+Serif:400,400italic');
             html {
