@@ -4,7 +4,7 @@ from .note import Note
 
 from graph_tools import Graph
 from os import walk
-from os.path import join, splitext, expanduser, isdir
+from os.path import join, splitext, isdir
 # from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
@@ -63,9 +63,9 @@ class Zettelkasten(object):
         :zettelkasten: pathname of directory where the notes are stored
 
         """
-        self.zettelkasten = expanduser(zettelkasten)
-        if not isdir(self.zettelkasten):
+        if not isdir(zettelkasten):
             raise ValueError('Invalid Zettelkasten directory provided')
+        self.zettelkasten = zettelkasten
         self.g = None
 
     def get_note(self, v):
@@ -283,23 +283,14 @@ class Zettelkasten(object):
         :output: output directory, must exist
 
         """
-        output = expanduser(output)
-        if not isdir(output):
-            raise ValueError('Invalid output directory provided')
         g = self.get_graph()
         # Write all Notes to disk
         for n in [self.get_note(v) for v in g.vertices()]:
             # Find all Notes that refer to this Note
             edges_to = set([i for l in self.g.edges_to(n.get_id()) for i in l])
             notes = [self.get_note(v) for v in edges_to]
-            # Render HTML template
+            # Render HTML template as a new Note
             env = Environment(trim_blocks=True).from_string(NOTE_REFS)
-            note = Note(0, contents=env.render(contents=n.get_body(),
-                                               notes=notes))
-            # Write to disk
-            filename = join(output, '{v}.html'.format(v=n.get_id()))
-            with open(filename, 'w') as f:
-                f.write(note.render())
-        # Write the index to disk
-        with open(join(output, 'index.html'), 'w') as f:
-            f.write(self.get_index().render())
+            note = Note(n.get_id(), contents=env.render(contents=n.get_body(),
+                                                        notes=notes))
+            yield(note)

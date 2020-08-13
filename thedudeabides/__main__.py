@@ -5,6 +5,7 @@ from .zettelkasten import Zettelkasten
 
 from argparse import ArgumentParser
 from os import environ
+from os.path import expanduser, join, isdir
 # from pprint import pprint
 from subprocess import call, run
 from sys import exit
@@ -118,7 +119,17 @@ def render_notes(zettelkasten, output):
 
     """
     log.info('Rendering notes')
-    zettelkasten.render(output)
+    if not isdir(output):
+        raise ValueError('Invalid output directory provided')
+
+    for note in zettelkasten.render(output):
+        # Write to disk
+        filename = join(output, '{v}.html'.format(v=note.get_id()))
+        with open(filename, 'w') as f:
+            f.write(note.render())
+    # Write the index to disk
+    with open(join(output, 'index.html'), 'w') as f:
+        f.write(zettelkasten.get_index().render())
 
 
 def collect_note(v, zettelkasten, output=None):
@@ -211,7 +222,7 @@ def main():
         logger(options)
         log.info('{s:-^80}'.format(s=" That's just like, your opinon, man "))
 
-        zettelkasten = Zettelkasten(options.zettelkasten)
+        zettelkasten = Zettelkasten(expanduser(options.zettelkasten))
 
         # Do command line arguments
         if options.collect:
@@ -230,7 +241,7 @@ def main():
             train_of_thought(options.train_of_thought, zettelkasten,
                              options.distance, options.output)
         if options.render:
-            render_notes(zettelkasten, options.render)
+            render_notes(zettelkasten, expanduser(options.render))
         if options.map:
             map_notes(zettelkasten, options.output)
         if options.inbox:

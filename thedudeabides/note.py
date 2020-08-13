@@ -19,6 +19,8 @@ HTML = """<!DOCTYPE html>
         <link rel="stylesheet" href="main.css"/>
         <link href="/favicon.ico" rel="shortcut icon"/>
         <style type="text/css">
+            @import url('http://fonts.googleapis.com/css?family=Open+Sans:400,700');
+            @import url('http://fonts.googleapis.com/css?family=PT+Serif:400,400italic');
             html {
                 min-height: 100%;
             }
@@ -29,16 +31,16 @@ HTML = """<!DOCTYPE html>
             }
             footer {
                 border-top: 1px solid #d81e05;
-                padding: 0.5em 0 0 0;
+                padding: 0.5em 0 0.5em 0;
             }
             a {
                 color: #d81e05;
-                font-family: 'Fira Code', sans-serif;
+                font-family: 'Open Sans', sans-serif;
                 line-height: 1.5em;
                 text-decoration: none;
             }
             h1, h2, h3 {
-                font-family: 'Fira Code', sans-serif;
+                font-family: 'Open Sans', sans-serif;
                 color: #d81e05;
             }
             h1 {
@@ -53,7 +55,7 @@ HTML = """<!DOCTYPE html>
             }
             p, li {
                 color: #404040;
-                font-family: 'Fira Code', serif;
+                font-family: 'PT Serif', serif;
                 line-height: 1.5em;
             }
         </style>
@@ -73,7 +75,7 @@ HTML = """<!DOCTYPE html>
         </footer>
     </body>
 </html>
-"""
+"""    # noqa
 
 
 class Note(object):
