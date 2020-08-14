@@ -57,6 +57,14 @@ HTML = """<!DOCTYPE html>
                 color: #404040;
                 font-family: 'PT Serif', serif;
                 line-height: 1.5em;
+                text-align: justify;
+                text-justify: auto;
+            }
+            img {
+                clear: both;
+                width: 100%;
+                border: 1px solid #404040;
+                margin: 1em 0 0 0;
             }
         </style>
         <meta name="description" content="{{ title|e }}"/>
