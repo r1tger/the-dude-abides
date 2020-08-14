@@ -63,7 +63,7 @@ HTML = """<!DOCTYPE html>
             img {
                 clear: both;
                 display: block;
-                margin: 1em auto 0 auto;
+                margin: 1em auto 1em auto;
                 max-width: 100%;
                 height: auto;
                 border: 1px solid #404040;
