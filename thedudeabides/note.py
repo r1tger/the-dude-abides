@@ -62,9 +62,11 @@ HTML = """<!DOCTYPE html>
             }
             img {
                 clear: both;
-                width: 100%;
+                display: block;
+                margin: 1em auto 0 auto;
+                max-width: 100%;
+                height: auto;
                 border: 1px solid #404040;
-                margin: 1em 0 0 0;
             }
         </style>
         <meta name="description" content="{{ title|e }}"/>
