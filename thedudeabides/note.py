@@ -112,8 +112,13 @@ class Note(object):
         def render_link_open(self, tokens, idx, options, env):
             """Change any links to include '.html'. """
             ai = tokens[idx].attrIndex('target')
-            target = '{t}.html'.format(t=tokens[idx].attrs[ai][1])
-            tokens[idx].attrs[ai][1] = target
+            try:
+                # If the target is an int, convert to point to an HTML file
+                target = '{t}.html'.format(t=int(tokens[idx].attrs[ai][1]))
+                tokens[idx].attrs[ai][1] = target
+            except ValueError:
+                # User target as-is (don't break other links)
+                pass
             return self.renderToken(tokens, idx, options, env)
 
         # Parse the contents of the note
@@ -203,16 +208,20 @@ class Note(object):
         :returns: list of tuple (link_name, link_target)
 
         """
-        text, href = '', ''
+        text, href, internal_link = '', '', False
         # Only process children of inline tokens
         for c in [t.children for t in self.T if t.type == 'inline']:
             for t in c:
                 if t.type == 'link_open':
-                    href = int(t.attrs[0][1])
-                    # href = int(t.attrIndex('target'))
+                    try:
+                        href = int(t.attrs[t.attrIndex('target')][1])
+                        internal_link = True
+                    except ValueError:
+                        # Special case: not an internal link
+                        internal_link = False
                 if t.type == 'text':
                     text = t.content
-                if t.type == 'link_close':
+                if t.type == 'link_close' and internal_link:
                     yield((text, href))
 
     def render(self):
