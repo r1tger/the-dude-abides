@@ -53,7 +53,7 @@ def zettelkasten(tmpdir):
 
 def test_collect(zettelkasten):
     """ """
-    zettelkasten.collect(99)
+    zettelkasten.collect(1)
 
 
 def test_create_note(zettelkasten):
@@ -90,3 +90,8 @@ def test_index(zettelkasten):
 def test_registry(zettelkasten):
     """ """
     assert(len(list(zettelkasten.registry())) == 3)
+
+
+def test_train_of_thought(zettelkasten):
+    """ """
+    zettelkasten.train_of_thought(1)

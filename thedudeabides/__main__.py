@@ -9,6 +9,8 @@ from os.path import expanduser, join, isdir
 # from pprint import pprint
 from subprocess import call, run
 from sys import exit
+from jinja2 import Environment
+from datetime import datetime
 
 import logging
 log = logging.getLogger(__name__)
@@ -44,11 +46,7 @@ def parse():
     parser.add_argument('--log', help='log file')
     parser.add_argument('--zettelkasten', default='.',
                         help='directory containing the zettelkasten')
-    parser.add_argument('-o', '--output', action='store_true', default=False,
-                        help='Write the output to disk')
     # Note specific
-    parser.add_argument('-d', '--distance', type=int,
-                        help='Maximum distance from source')
     parser.add_argument('--create', default='',
                         help='create a new note, providing the title')
     parser.add_argument('-e', '--edit', type=int,
@@ -81,33 +79,22 @@ def output_note(output):
     return run([editor, '-c', 'set ft=markdown', '-'], input=output, text=True)
 
 
-def train_of_thought(v, zettelkasten, distance=None, output=None):
+def train_of_thought(v, zettelkasten):
     """Display the train of though for a Note.
 
     :v: id of Note to start from
     :zettelkasten: zettelkasten instance to query
-    :output: True if output must be sent to the default editor
     :returns: TODO
 
     """
-    out = ''
-    for h, note in zettelkasten.train_of_thought(v):
-        if distance is not None and h >= distance:
-            log.debug('{i:>5}. SKIPPED'.format(i=note.get_id()))
-            continue
-        log.info('{i:>5}. {t} [{h}]'.format(i=note.get_id(), t=note, h=h))
-        out += note.get_body() + '\n'
-    if output:
-        output_note(out)
+    log.info('Collecting Notes')
+    output_note(zettelkasten.train_of_thought(v).get_contents())
 
 
-def map_notes(zettelkasten, output=None):
+def map_notes(zettelkasten):
     """ """
-    if output is None:
-        raise ValueError('Output must be set (--output)')
     # Create the graph and write to [output]
-    g = zettelkasten.get_graph()
-    output_note(g.export_dot())
+    output_note(zettelkasten.get_graph().export_dot())
 
 
 def render_notes(zettelkasten, output):
@@ -129,23 +116,19 @@ def render_notes(zettelkasten, output):
             f.write(note.render())
     # Write the index to disk
     with open(join(output, 'index.html'), 'w') as f:
-        f.write(zettelkasten.get_index().render())
+        f.write(zettelkasten.index().render())
 
 
-def collect_note(v, zettelkasten, output=None):
+def collect_note(v, zettelkasten):
     """TODO: Docstring for collect_note.
 
     :v: TODO
-    :zettekasten: TODO
+    :zettelkasten: TODO
     :returns: TODO
 
     """
-    out = ''
-    for note in zettelkasten.collect(v):
-        log.info('{i:>5}. {t}'.format(i=note.get_id(), t=note))
-        out += note.get_body() + '\n'
-    if output:
-        output_note(out)
+    log.info('Collecting Notes')
+    output_note(zettelkasten.collect(v).get_contents())
 
 
 def edit_note(note, zettelkasten):
@@ -171,7 +154,7 @@ def create_note(zettelkasten, title):
     note = zettelkasten.create_note(title)
     # Write template to file
     with open(note.get_filename(), 'w') as f:
-        f.write(note.get_body())
+        f.write(note.get_contents())
     log.info('Created new note "{f}"'.format(f=note.get_filename()))
     # Edit the Note
     edit_note(note, zettelkasten)
@@ -205,7 +188,7 @@ def index(zettelkasten):
 
     """
     log.info('Collecting Notes')
-    output_note(zettelkasten.get_index().get_body())
+    output_note(zettelkasten.index().get_contents())
 
 
 def find(s, zettelkasten):
@@ -226,7 +209,7 @@ def main():
 
         # Do command line arguments
         if options.collect:
-            collect_note(options.collect, zettelkasten, options.output)
+            collect_note(options.collect, zettelkasten)
         if options.create:
             create_note(zettelkasten, options.create)
         if options.edit:
@@ -238,12 +221,11 @@ def main():
         if options.find:
             find(options.find, zettelkasten)
         if options.train_of_thought:
-            train_of_thought(options.train_of_thought, zettelkasten,
-                             options.distance, options.output)
+            train_of_thought(options.train_of_thought, zettelkasten)
         if options.render:
             render_notes(zettelkasten, expanduser(options.render))
         if options.map:
-            map_notes(zettelkasten, options.output)
+            map_notes(zettelkasten)
         if options.inbox:
             inbox(zettelkasten)
     except KeyboardInterrupt:

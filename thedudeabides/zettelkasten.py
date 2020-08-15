@@ -15,11 +15,13 @@ log = logging.getLogger(__name__)
 ATTR_NOTE = 'note'
 EXT_NOTE = 'md'
 
+
 NOTE_NEW = """---
 title: "{{ title }}"
 date: "{{ date }}"
 ---
 
+{{ body }}
 """
 
 NOTE_REFS = """{{ contents }}
@@ -46,6 +48,15 @@ date: "{{ date }}"
 {% endfor %}
 
 {% endfor %}
+"""
+
+NOTE_COLLECTED = """{% for note in notes %}
+# {{ note.get_title() }}
+
+{{ note.get_body() }}
+
+{% endfor %}
+
 """
 
 
@@ -162,15 +173,17 @@ class Zettelkasten(object):
         g = self.get_graph()
         return (len(g.edges_from(v)), len(g.edges_to(v)))
 
-    def create_note(self, title=''):
+    def create_note(self, title='', body=''):
         """Create a new Note using a template. Does not write the note to disk.
 
-        :title: Title for note
+        :title: title for note
+        :body: body for note
         :returns: Note
 
         """
         env = Environment(trim_blocks=True).from_string(NOTE_NEW)
-        contents = env.render(title=title, date=datetime.utcnow().isoformat())
+        contents = env.render(title=title, date=datetime.utcnow().isoformat(),
+                              body=body)
         # Create Note
         g = self.get_graph()
         n = g.vertices()
@@ -206,7 +219,7 @@ class Zettelkasten(object):
         for c, v in [(c, v) for c, v in vertices if c == 0]:
             yield((c, g.get_vertex_attribute(v, ATTR_NOTE)))
 
-    def index(self):
+    def _index(self):
         """Create a dynamic index of clusters of information. """
         explored = []
         # Get all notes in the zettelkasten
@@ -214,24 +227,24 @@ class Zettelkasten(object):
             if n in explored:
                 continue
             # Collect all related notes for this Note
-            cluster = list(self.collect(n.get_id()))
+            cluster = list(self._collect(n.get_id()))
             # Add to available clusters
             explored += cluster
             # Try to store as little context as possible
             yield(cluster)
 
-    def get_index(self):
+    def index(self):
         """Create a markdown representation of the index of notes.
 
         :returns: Note
 
         """
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
-        return Note(0, contents=env.render(clusters=self.index(),
+        return Note(0, contents=env.render(clusters=self._index(),
                                            date=datetime.utcnow().isoformat()))
 
-    def collect(self, v):
-        """Collect all Notes associated with the provided id. All edges are
+    def _collect(self, v):
+        """Collect all Notes associated with the provided ID. All edges are
         traversed and the associated Notes are returned.
 
         :v: id of Note to use as starting point
@@ -245,13 +258,24 @@ class Zettelkasten(object):
         for v in g.explore(v):
             yield(g.get_vertex_attribute(v, ATTR_NOTE))
 
-    def train_of_thought(self, v):
+    def collect(self, v):
+        """Collect all Notes associated with the provided ID.
+
+        :v: id of Note to use as starting point
+        :returns: Note for all collected notes
+
+        """
+        env = Environment(trim_blocks=True).from_string(NOTE_COLLECTED)
+        return self.create_note(self.get_note(v).get_title(),
+                                env.render(notes=self._collect(v)))
+
+    def _train_of_thought(self, v):
         """Find a "train of thought", starting a the note with the provided id.
         Finds the shortest path to a leaf and returns the Notes, ordered by
         distance from the starting Note.
 
         :v: id of Note to use as starting point
-        :returns: generator of tuple (distance, Note)
+        :returns: generator of Note
 
         """
         if not self.exists(v):
@@ -260,7 +284,18 @@ class Zettelkasten(object):
         # Get network of related Notes
         dist, prev = g.dijkstra(v)
         for u, h in sorted(dist.items(), key=lambda x: x[1], reverse=True):
-            yield((h, g.get_vertex_attribute(u, ATTR_NOTE)))
+            yield(g.get_vertex_attribute(u, ATTR_NOTE))
+
+    def train_of_thought(self, v):
+        """Find a "train of thought".
+
+        :v: id of Note to use as starting point
+        :returns: Note for all collected notes
+
+        """
+        env = Environment(trim_blocks=True).from_string(NOTE_COLLECTED)
+        return self.create_note(self.get_note(v).get_title(),
+                                env.render(notes=self._train_of_thought(v)))
 
     def find(self, s):
         """Search for all notes containing term s.
@@ -291,6 +326,6 @@ class Zettelkasten(object):
             notes = [self.get_note(v) for v in edges_to]
             # Render HTML template as a new Note
             env = Environment(trim_blocks=True).from_string(NOTE_REFS)
-            note = Note(n.get_id(), contents=env.render(contents=n.get_body(),
-                                                        notes=notes))
+            note = Note(n.get_id(), contents=env.render(
+                        contents=n.get_contents(), notes=notes))
             yield(note)

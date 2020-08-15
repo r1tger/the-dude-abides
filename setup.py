@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='thedudeabides',
-    version='0.3.0',
+    version='0.4.0',
     description='The dude abides',
     url='https://github.com/r1tger/the-dude-abides',
     author='Ritger Teunissen',
@@ -11,7 +11,7 @@ setup(
     install_requires=[
         'graph-tools',
         'ngram',
-        'pyyaml',
+        'frontmatter',
         'markdown-it-py',
         'jinja2'
     ],

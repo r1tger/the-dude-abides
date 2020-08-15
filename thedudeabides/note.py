@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from ngram import NGram
-from yaml import load, FullLoader
 from jinja2 import Environment
 
 from markdown_it import MarkdownIt
 from markdown_it.token import nest_tokens
-from markdown_it.extensions.front_matter import front_matter_plugin
+from frontmatter import load, loads, dumps
 
 import logging
 log = logging.getLogger(__name__)
@@ -106,7 +105,7 @@ class Note(object):
         """
         self.ident = ident
         self.filename = filename
-        self.contents = contents
+        self.contents = load(filename) if contents is None else loads(contents)
         self.front_matter = None
 
         def render_link_open(self, tokens, idx, options, env):
@@ -117,12 +116,12 @@ class Note(object):
                 target = '{t}.html'.format(t=int(tokens[idx].attrs[ai][1]))
                 tokens[idx].attrs[ai][1] = target
             except ValueError:
-                # User target as-is (don't break other links)
+                # Use target as-is (don't break other links)
                 pass
             return self.renderToken(tokens, idx, options, env)
 
         # Parse the contents of the note
-        self.md = (MarkdownIt('commonmark').use(front_matter_plugin))
+        self.md = MarkdownIt('commonmark')
         self.md.add_render_rule('link_open', render_link_open)
         self.T = self.md.parse(self.get_body())
 
@@ -146,17 +145,22 @@ class Note(object):
         """
         return self.get_title()
 
+    def get_contents(self):
+        """Get the contents of the note. Includes header (front matter) and
+        body.
+
+        :return: contents of Note
+
+        """
+        return dumps(self.contents)
+
     def get_body(self):
         """Get the body of the note. See Note::get_tag() for more information.
 
         :returns: body of Note (as-is, no parsing)
 
         """
-        if self.contents is None:
-            # Load the note as a YAML file
-            with open(self.filename) as f:
-                self.contents = f.read()
-        return self.contents
+        return self.contents.content
 
     def get_id(self):
         """Get the unique identifier for the Note.
@@ -182,16 +186,10 @@ class Note(object):
         :returns: value for tag
 
         """
-        if self.front_matter is None:
-            try:
-                fm = [t for t in self.T if t.type == 'front_matter'][0]
-                # Load front matter as YAML syntax
-                self.front_matter = load(fm.content, Loader=FullLoader)
-            except IndexError:
-                self.front_matter = {}
-        if tag not in self.front_matter:
-            raise ValueError('Tag "{t}" not found'.format(t=tag))
-        return self.front_matter[tag]
+        if tag not in self.contents:
+            raise ValueError('Tag "{t}" not found ({i})'.format(t=tag,
+                             i=self.get_id()))
+        return self.contents[tag]
 
     def get_title(self):
         """Get the title of the Note. Title is stored as a tag in the header.
