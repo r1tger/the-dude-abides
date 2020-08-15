@@ -11,7 +11,7 @@ setup(
     install_requires=[
         'graph-tools',
         'ngram',
-        'frontmatter',
+        'python-frontmatter',
         'markdown-it-py',
         'jinja2'
     ],
