@@ -109,7 +109,7 @@ def render_notes(zettelkasten, output):
     if not isdir(output):
         raise ValueError('Invalid output directory provided')
 
-    for note in zettelkasten.render(output):
+    for note in zettelkasten.render():
         # Write to disk
         filename = join(output, '{v}.html'.format(v=note.get_id()))
         with open(filename, 'w') as f:

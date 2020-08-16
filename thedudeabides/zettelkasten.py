@@ -311,9 +311,9 @@ class Zettelkasten(object):
             if note.find(s):
                 yield(note)
 
-    def render(self, output):
-        """Write all notes to disk, including an index with clusters. TODO: add
-        backlinks for each Note from the graph.
+    def render(self):
+        """Get all Notes in the Zettelkasten, including a list of referring
+        Notes for each Note.
 
         :output: output directory, must exist
 
@@ -323,7 +323,7 @@ class Zettelkasten(object):
         for n in [self.get_note(v) for v in g.vertices()]:
             # Find all Notes that refer to this Note
             edges_to = set([i for l in self.g.edges_to(n.get_id()) for i in l])
-            notes = [self.get_note(v) for v in edges_to]
+            notes = [self.get_note(v) for v in edges_to if v is not n.get_id()]
             # Render HTML template as a new Note
             env = Environment(trim_blocks=True).from_string(NOTE_REFS)
             note = Note(n.get_id(), contents=env.render(
