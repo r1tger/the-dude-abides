@@ -5,7 +5,7 @@ from .note import Note
 from graph_tools import Graph
 from os import walk
 from os.path import join, splitext, isdir
-# from pprint import pprint
+from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
 
@@ -41,14 +41,14 @@ date: "{{ date }}"
 ---
 
 {% for cluster in clusters %}
-## Cluster: {{ '%03d' % (loop.index) }}
+## {{ '%03d' % (loop.index) }}: {{ cluster[0][1].get_title() }}
 
-{% for note in cluster|sort(reverse=True) %}
-* [{{ note }}]({{ note.get_id() }})
+{% for b, note in cluster %}
+* [{{ '%02d' % b }}] [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 
 {% endfor %}
-"""
+"""    # noqa
 
 NOTE_COLLECTED = """{% for note in notes %}
 # {{ note.get_title() }}
@@ -106,6 +106,19 @@ class Zettelkasten(object):
                     continue
                 yield((v, Note(v, join(root, name))))
 
+    def get_notes_to(self, v):
+        """Get all Notes that refer to Note v.
+
+        :v: ID of Note
+        :returns: TODO
+
+        """
+        if not self.exists(v):
+            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
+        # Get Notes for all incoming vertices
+        edges_to = set([i for l in self.g.edges_to(v) for i in l])
+        return([self.get_note(u) for u in edges_to if u is not v])
+
     def get_graph(self):
         """Create a directed graph, using each Note as a vertex and the
         Markdown links between Notes as edges. The graph is used to find
@@ -146,32 +159,6 @@ class Zettelkasten(object):
                     log.debug('Add edge from {u} to {v}'.format(u=u, v=v))
         # Return the populated graph
         return self.g
-
-    def registry(self):
-        """Get a list of all Notes, sorted by outgoing edges (most edges
-        first). Notes which link to (lots of) other Notes tend to summarise the
-        Notes linked too, and are of interest when looking for clusters of
-        information.
-
-        :returns: generator of tuple (count, Note)
-
-        """
-        g = self.get_graph()
-        vertices = [(len(g.edges_from(v)), v) for v in g.vertices()]
-        for c, v in sorted(vertices, key=lambda x: x[0], reverse=True):
-            yield((c, g.get_vertex_attribute(v, ATTR_NOTE)))
-
-    def get_edges_count(self, v):
-        """Count both incoming and outgoing edges for id
-
-        :v: ID of note
-        :returns: tuple of (from, to)
-
-        """
-        if not self.exists(v):
-            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
-        g = self.get_graph()
-        return (len(g.edges_from(v)), len(g.edges_to(v)))
 
     def create_note(self, title='', body=''):
         """Create a new Note using a template. Does not write the note to disk.
@@ -220,18 +207,17 @@ class Zettelkasten(object):
             yield((c, g.get_vertex_attribute(v, ATTR_NOTE)))
 
     def _index(self):
-        """Create a dynamic index of clusters of information. """
-        explored = []
-        # Get all notes in the zettelkasten
-        for c, n in self.registry():
-            if n in explored:
-                continue
-            # Collect all related notes for this Note
-            cluster = list(self._collect(n.get_id()))
-            # Add to available clusters
-            explored += cluster
-            # Try to store as little context as possible
-            yield(cluster)
+        """Get all vertices, sorted by number of edges (more edges = better
+        connected).
+
+        :returns: generator of (nr_edges_at, Note)
+
+        """
+        g = self.get_graph()
+        for c in g.components():
+            # Get number of edges and Note for each vertex in the subgraph
+            notes = [(len(g.edges_at(v)), self.get_note(v)) for v in c]
+            yield(sorted(notes, key=lambda x: x[0], reverse=True))
 
     def index(self):
         """Create a markdown representation of the index of notes.
@@ -321,11 +307,9 @@ class Zettelkasten(object):
         g = self.get_graph()
         # Write all Notes to disk
         for n in [self.get_note(v) for v in g.vertices()]:
-            # Find all Notes that refer to this Note
-            edges_to = set([i for l in self.g.edges_to(n.get_id()) for i in l])
-            notes = [self.get_note(v) for v in edges_to if v is not n.get_id()]
             # Render HTML template as a new Note
             env = Environment(trim_blocks=True).from_string(NOTE_REFS)
             note = Note(n.get_id(), contents=env.render(
-                        contents=n.get_contents(), notes=notes))
+                        contents=n.get_contents(),
+                        notes=self.get_notes_to(n.get_id())))
             yield(note)

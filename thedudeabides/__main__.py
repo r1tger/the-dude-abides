@@ -51,8 +51,6 @@ def parse():
                         help='create a new note, providing the title')
     parser.add_argument('-e', '--edit', type=int,
                         help='edit a note by ID')
-    parser.add_argument('-r', '--registry', action='store_true',
-                        help='show the registry of all notes')
     parser.add_argument('-i', '--index', action='store_true',
                         help='show an index of clustered notes')
     parser.add_argument('-c', '--collect', type=int,
@@ -160,15 +158,6 @@ def create_note(zettelkasten, title):
     edit_note(note, zettelkasten)
 
 
-def registry(zettelkasten):
-    """TODO: Docstring for register.
-    :returns: TODO
-
-    """
-    for c, note in zettelkasten.registry():
-        log.info('{i:>5}. {t} [{c}]'.format(i=note.get_id(), t=note, c=c))
-
-
 def inbox(zettelkasten):
     """TODO: Docstring for inbox.
 
@@ -214,8 +203,6 @@ def main():
             create_note(zettelkasten, options.create)
         if options.edit:
             edit_note(zettelkasten.get_note(options.edit), zettelkasten)
-        if options.registry:
-            registry(zettelkasten)
         if options.index:
             index(zettelkasten)
         if options.find:

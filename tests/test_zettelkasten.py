@@ -72,11 +72,6 @@ def test_exists(zettelkasten):
     assert(not zettelkasten.exists(99))
 
 
-def test_get_edges_count(zettelkasten):
-    """ """
-    zettelkasten.get_edges_count(1)
-
-
 def test_inbox(zettelkasten):
     """ """
     assert(len(list(zettelkasten.inbox())) == 1)
@@ -85,11 +80,6 @@ def test_inbox(zettelkasten):
 def test_index(zettelkasten):
     """ """
     zettelkasten.index()
-
-
-def test_registry(zettelkasten):
-    """ """
-    assert(len(list(zettelkasten.registry())) == 3)
 
 
 def test_train_of_thought(zettelkasten):
