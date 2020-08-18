@@ -9,8 +9,6 @@ from os.path import expanduser, join, isdir
 # from pprint import pprint
 from subprocess import call, run
 from sys import exit
-from jinja2 import Environment
-from datetime import datetime
 
 import logging
 log = logging.getLogger(__name__)
@@ -55,7 +53,6 @@ def parse():
                         help='show an index of clustered notes')
     parser.add_argument('-c', '--collect', type=int,
                         help='collect associated notes')
-    parser.add_argument('-f', '--find', help='search for a specific word')
     parser.add_argument('-t', '--train-of-thought', type=int,
                         help='collect associated notes')
     parser.add_argument('--map', action='store_true',
@@ -180,12 +177,6 @@ def index(zettelkasten):
     output_note(zettelkasten.index().get_contents())
 
 
-def find(s, zettelkasten):
-    """ Find any Notes that match search term s. """
-    for note in zettelkasten.find(s):
-        log.info('{v:>5}. {t}'.format(v=note.get_id(), t=note))
-
-
 def main():
     """ Main entry point """
     options = parse()
@@ -205,8 +196,6 @@ def main():
             edit_note(zettelkasten.get_note(options.edit), zettelkasten)
         if options.index:
             index(zettelkasten)
-        if options.find:
-            find(options.find, zettelkasten)
         if options.train_of_thought:
             train_of_thought(options.train_of_thought, zettelkasten)
         if options.render:

@@ -1,5 +1,4 @@
 graph-tools
-ngram
-python-frontmatter
-markdown-it-py
 jinja2
+markdown-it-py
+python-frontmatter

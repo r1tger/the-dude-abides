@@ -10,10 +10,9 @@ setup(
     packages=['thedudeabides'],
     install_requires=[
         'graph-tools',
-        'ngram',
-        'python-frontmatter',
+        'jinja2',
         'markdown-it-py',
-        'jinja2'
+        'python-frontmatter'
     ],
     entry_points={'console_scripts': [
         'thedudeabides = thedudeabides.__main__:main',

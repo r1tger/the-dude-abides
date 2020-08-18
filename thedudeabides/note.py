@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from ngram import NGram
 from jinja2 import Environment
 
 from markdown_it import MarkdownIt
@@ -231,15 +230,3 @@ class Note(object):
         env = Environment().from_string(HTML)
         return env.render(title=self.get_title(),
                           content=self.md.render(self.get_body()))
-
-    def find(self, s):
-        """Search for a specific term in the text of the note. Performs a fuzzy
-        match on the body of the Note.
-
-        :s: search term
-        :returns: True if s is found in Note, False if not
-
-        """
-        n = NGram(self.get_body().split(), key=lambda x: x.lower())
-        # Try to match term s with a similarity of 0.5
-        return True if n.find(s.lower(), 0.5) is not None else False

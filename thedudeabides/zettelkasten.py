@@ -32,7 +32,6 @@ NOTE_REFS = """{{ contents }}
 * [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 {% endif %}
-
 """
 
 NOTE_INDEX = """---
@@ -44,14 +43,14 @@ date: "{{ date }}"
 ## {{ '%03d' % (loop.index) }}: {{ cluster[0][1].get_title() }}
 
 {% for b, note in cluster %}
-* [{{ '%02d' % b }}] [{{ note }}]({{ note.get_id() }})
+* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 
 {% endfor %}
 """    # noqa
 
 NOTE_COLLECTED = """{% for note in notes %}
-# {{ note.get_title() }}
+# {{ note.get_title() }} ({{ note.get_id() }})
 
 {{ note.get_body() }}
 
@@ -256,9 +255,9 @@ class Zettelkasten(object):
                                 env.render(notes=self._collect(v)))
 
     def _train_of_thought(self, v):
-        """Find a "train of thought", starting a the note with the provided id.
-        Finds the shortest path to a leaf and returns the Notes, ordered by
-        distance from the starting Note.
+        """Find a "train of thought", starting at the note with the provided
+        id.  Finds the shortest path to a leaf and returns the Notes, ordered
+        by distance from the starting Note.
 
         :v: id of Note to use as starting point
         :returns: generator of Note
@@ -266,9 +265,10 @@ class Zettelkasten(object):
         """
         if not self.exists(v):
             raise ValueError('No Note for ID: "{v}" found'.format(v=v))
-        g = self.get_graph()
         # Get network of related Notes
+        g = self.get_graph()
         dist, prev = g.dijkstra(v)
+        # Retrieve all Nodes in the subgraph
         for u, h in sorted(dist.items(), key=lambda x: x[1], reverse=True):
             yield(g.get_vertex_attribute(u, ATTR_NOTE))
 
@@ -282,20 +282,6 @@ class Zettelkasten(object):
         env = Environment(trim_blocks=True).from_string(NOTE_COLLECTED)
         return self.create_note(self.get_note(v).get_title(),
                                 env.render(notes=self._train_of_thought(v)))
-
-    def find(self, s):
-        """Search for all notes containing term s.
-
-        :s: search term
-        :returns: generator of Note
-
-        """
-        g = self.get_graph()
-        # Get all vertices
-        for v in g.vertices():
-            note = g.get_vertex_attribute(v, ATTR_NOTE)
-            if note.find(s):
-                yield(note)
 
     def render(self):
         """Get all Notes in the Zettelkasten, including a list of referring
