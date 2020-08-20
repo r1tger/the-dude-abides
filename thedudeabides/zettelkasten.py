@@ -8,6 +8,7 @@ from os.path import join, splitext, isdir
 from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
+from itertools import compress
 
 import logging
 log = logging.getLogger(__name__)
@@ -117,6 +118,19 @@ class Zettelkasten(object):
         # Get Notes for all incoming vertices
         edges_to = set([i for l in self.g.edges_to(v) for i in l])
         return([self.get_note(u) for u in edges_to if u is not v])
+
+    def get_notes_from(self, v):
+        """Get all Notes that are connected from Note v.
+
+        :v: ID of Note
+        :returns: TODO
+
+        """
+        if not self.exists(v):
+            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
+        # Get Notes for all outgoing vertices
+        edges_from = set([i for l in self.g.edges_from(v) for i in l])
+        return([self.get_note(u) for u in edges_from if u is not v])
 
     def get_graph(self):
         """Create a directed graph, using each Note as a vertex and the
@@ -240,7 +254,10 @@ class Zettelkasten(object):
             raise ValueError('No Note for ID: "{v}" found'.format(v=v))
         g = self.get_graph()
         # Get network of related Notes
-        for v in g.explore(v):
+        explored = g.explore(v)
+        log.info('Retrieved notes: {n}'.format(
+                 n=', '.join(map(str, explored))))
+        for v in explored:
             yield(g.get_vertex_attribute(v, ATTR_NOTE))
 
     def collect(self, v):
@@ -254,7 +271,7 @@ class Zettelkasten(object):
         return self.create_note(self.get_note(v).get_title(),
                                 env.render(notes=self._collect(v)))
 
-    def _train_of_thought(self, v):
+    def _train_of_thought(self, s):
         """Find a "train of thought", starting at the note with the provided
         id.  Finds the shortest path to a leaf and returns the Notes, ordered
         by distance from the starting Note.
@@ -263,14 +280,25 @@ class Zettelkasten(object):
         :returns: generator of Note
 
         """
-        if not self.exists(v):
-            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
-        # Get network of related Notes
+        if not self.exists(s):
+            raise ValueError('No Note for ID: "{v}" found'.format(v=s))
+
+        explored = []
+        need_visit = set()
+        need_visit.add(s)
         g = self.get_graph()
-        dist, prev = g.dijkstra(v)
-        # Retrieve all Nodes in the subgraph
-        for u, h in sorted(dist.items(), key=lambda x: x[1], reverse=True):
-            yield(g.get_vertex_attribute(u, ATTR_NOTE))
+        while need_visit:
+            u = need_visit.pop()
+            explored.append(u)
+            for v in [i for l in g.edges_from(u) for i in l]:
+                if v not in explored:
+                    log.debug('Processing "{v}" in context of "{u}"'.format(
+                              v=v, u=u))
+                    need_visit.add(v)
+        log.info('Retrieved notes: {n}'.format(
+                 n=', '.join(map(str, explored))))
+        for u in explored:
+            yield(self.get_note(u))
 
     def train_of_thought(self, v):
         """Find a "train of thought".

@@ -82,7 +82,7 @@ def train_of_thought(v, zettelkasten):
     :returns: TODO
 
     """
-    log.info('Collecting Notes')
+    log.info('Collecting train of thought for "{v}"'.format(v=v))
     output_note(zettelkasten.train_of_thought(v).get_contents())
 
 
@@ -122,7 +122,7 @@ def collect_note(v, zettelkasten):
     :returns: TODO
 
     """
-    log.info('Collecting Notes')
+    log.info('Collecting Notes for "{v}"'.format(v=v))
     output_note(zettelkasten.collect(v).get_contents())
 
 
