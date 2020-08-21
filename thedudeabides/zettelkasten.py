@@ -213,17 +213,6 @@ class Zettelkasten(object):
         return g.has_vertex(v)
         g = self.get_graph()
 
-    def strongly_connected(self):
-        """ """
-        g = self.get_graph()
-        # Compare all vertices to find the strongest connected Notes
-        connected = {}
-        for v in g.vertices():
-            for u in g.vertices():
-                if len(g.shortest_paths(v, u)) > 1 and v not in connected:
-                    connected[v] = ((len(g.edges_at(v)), self.get_note(v)))
-        return sorted(connected.values(), key=lambda x: x[0], reverse=True)
-
     def inbox(self):
         """Get all unlinked notes (no associated edges). Unlinked notes should
         be processed and put in context of other notes in the Zettelkasten.
@@ -237,7 +226,13 @@ class Zettelkasten(object):
             yield((c, g.get_vertex_attribute(v, ATTR_NOTE)))
 
     def _entry_notes(self):
-        """ """
+        """Get a list of entry notes. Entry notes have no outgoing edges, which
+        makes them the starting point for a train of thought by following the
+        back links.
+
+        :returns: list of Note
+
+        """
         g = self.get_graph()
         found = []
         for v in [v for v in g.vertices() if len(g.edges_from(v)) == 0]:
@@ -265,8 +260,7 @@ class Zettelkasten(object):
         """
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
         return Note(0, contents=env.render(clusters=self._index(),
-                    strongly_connected=self.strongly_connected(),
-                    entry_notes = self._entry_notes(),
+                    entry_notes=self._entry_notes(),
                     date=datetime.utcnow().isoformat()))
 
     def _collect(self, v):

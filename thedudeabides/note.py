@@ -27,7 +27,7 @@ HTML = """<!DOCTYPE html>
             <div class="grid">
                 <div class="page" data-level="1">
                     <div class="content">
-                        <h1>{{ title|e }}</h1>
+                        <h1>{{ ident }}. {{ title|e }}</h1>
                         {{ content }}
                     </div>
                 </div>
