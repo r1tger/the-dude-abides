@@ -89,6 +89,10 @@ function initializeLinks(page, level) {
                     e.preventDefault();
                     if (stackNote(element.href, this.dataset.level)) {
                         fetchNote(element.href, this.dataset.level, (animate = true));
+                    } else {
+                        // blink element
+                        console.log("blink")
+                        element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
                     }
                 }
             });

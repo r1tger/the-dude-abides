@@ -5,10 +5,9 @@ from .note import Note
 from graph_tools import Graph
 from os import walk
 from os.path import join, splitext, isdir
-from pprint import pprint
+# from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
-from itertools import compress
 
 import logging
 log = logging.getLogger(__name__)
@@ -40,6 +39,12 @@ title: "Index"
 date: "{{ date }}"
 ---
 
+## Conn.
+
+{% for b, note in entry_notes %}
+* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
+{% endfor %}
+
 {% for cluster in clusters %}
 ## {{ '%03d' % (loop.index) }}: {{ cluster[0][1].get_title() }}
 
@@ -48,7 +53,7 @@ date: "{{ date }}"
 {% endfor %}
 
 {% endfor %}
-"""    # noqa
+"""
 
 NOTE_COLLECTED = """{% for note in notes %}
 # {{ note.get_title() }} ({{ note.get_id() }})
@@ -206,6 +211,18 @@ class Zettelkasten(object):
         """
         g = self.get_graph()
         return g.has_vertex(v)
+        g = self.get_graph()
+
+    def strongly_connected(self):
+        """ """
+        g = self.get_graph()
+        # Compare all vertices to find the strongest connected Notes
+        connected = {}
+        for v in g.vertices():
+            for u in g.vertices():
+                if len(g.shortest_paths(v, u)) > 1 and v not in connected:
+                    connected[v] = ((len(g.edges_at(v)), self.get_note(v)))
+        return sorted(connected.values(), key=lambda x: x[0], reverse=True)
 
     def inbox(self):
         """Get all unlinked notes (no associated edges). Unlinked notes should
@@ -219,6 +236,14 @@ class Zettelkasten(object):
         for c, v in [(c, v) for c, v in vertices if c == 0]:
             yield((c, g.get_vertex_attribute(v, ATTR_NOTE)))
 
+    def _entry_notes(self):
+        """ """
+        g = self.get_graph()
+        found = []
+        for v in [v for v in g.vertices() if len(g.edges_from(v)) == 0]:
+            found.append((len(g.edges_at(v)), self.get_note(v)))
+        return sorted(found, key=lambda x: x[0], reverse=True)
+
     def _index(self):
         """Get all vertices, sorted by number of edges (more edges = better
         connected).
@@ -229,7 +254,7 @@ class Zettelkasten(object):
         g = self.get_graph()
         for c in g.components():
             # Get number of edges and Note for each vertex in the subgraph
-            notes = [(len(g.edges_at(v)), self.get_note(v)) for v in c]
+            notes = [(len(g.edges_from(v)), self.get_note(v)) for v in c]
             yield(sorted(notes, key=lambda x: x[0], reverse=True))
 
     def index(self):
@@ -240,7 +265,9 @@ class Zettelkasten(object):
         """
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
         return Note(0, contents=env.render(clusters=self._index(),
-                                           date=datetime.utcnow().isoformat()))
+                    strongly_connected=self.strongly_connected(),
+                    entry_notes = self._entry_notes(),
+                    date=datetime.utcnow().isoformat()))
 
     def _collect(self, v):
         """Collect all Notes associated with the provided ID. All edges are
