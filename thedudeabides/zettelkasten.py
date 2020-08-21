@@ -317,7 +317,7 @@ class Zettelkasten(object):
         while need_visit:
             u = need_visit.pop()
             explored.append(u)
-            for v in [i for l in g.edges_from(u) for i in l]:
+            for v in [i for l in g.edges_to(u) for i in l]:
                 if v not in explored:
                     log.debug('Processing "{v}" in context of "{u}"'.format(
                               v=v, u=u))
