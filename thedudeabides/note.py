@@ -16,57 +16,6 @@ HTML = """<!DOCTYPE html>
         <title>{{ title }}</title>
         <link rel="stylesheet" href="main.css"/>
         <link href="/favicon.ico" rel="shortcut icon"/>
-        <style>
-            @import url('http://fonts.googleapis.com/css?family=Open+Sans:400,700');
-            @import url('http://fonts.googleapis.com/css?family=PT+Serif:400,400italic');
-            html {
-                min-height: 100%;
-            }
-            body {
-                width: 80%;
-                margin: auto;
-                font-size: medium;
-            }
-            footer {
-                border-top: 1px solid #d81e05;
-                padding: 0.5em 0 0.5em 0;
-            }
-            a {
-                color: #d81e05;
-                font-family: 'Open Sans', sans-serif;
-                line-height: 1.5em;
-                text-decoration: none;
-            }
-            h1, h2, h3 {
-                font-family: 'Open Sans', sans-serif;
-                color: #d81e05;
-            }
-            h1 {
-                border-bottom: 1px solid #d81e05;
-                font-size: x-large;
-            }
-            h2 {
-                font-size: large;
-            }
-            h3 {
-                font-size: medium;
-            }
-            p, li {
-                color: #404040;
-                font-family: 'PT Serif', serif;
-                line-height: 1.5em;
-                text-align: justify;
-                text-justify: auto;
-            }
-            img {
-                clear: both;
-                display: block;
-                margin: 1em auto 1em auto;
-                max-width: 100%;
-                height: auto;
-                border: 1px solid #404040;
-            }
-        </style>
         <meta name="description" content="{{ title|e }}"/>
         <!--[if IE]>
         <script
@@ -74,14 +23,20 @@ HTML = """<!DOCTYPE html>
         <![endif]-->
     </head>
     <body class="index">
-        <section class="index-content">
-            <h1>{{ title|e }}</h1>
-            {{ content }}
-        </section>
-        <footer>
-            <a href="index.html">Index</a>
-        </footer>
+        <div class="grid-container">
+            <div class="grid">
+                <div class="page" data-level="1">
+                    <div class="content">
+                        <h1>{{ title|e }}</h1>
+                        {{ content }}
+                    </div>
+                </div>
+            </div>
+        </div>
     </body>
+
+    <script src="https://unpkg.com/urijs@1"></script>
+    <script src="main.js" type="text/javascript"></script>
 </html>
 """    # noqa
 
@@ -154,7 +109,7 @@ class Note(object):
         return dumps(self.contents)
 
     def get_body(self):
-        """Get the body of the note. See Note::get_tag() for more information.
+        """Get the body of the note.
 
         :returns: body of Note (as-is, no parsing)
 
@@ -229,4 +184,5 @@ class Note(object):
         """
         env = Environment().from_string(HTML)
         return env.render(title=self.get_title(),
+                          ident=self.get_id(),
                           content=self.md.render(self.get_body()))
