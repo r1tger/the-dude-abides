@@ -28,8 +28,8 @@ NOTE_REFS = """{{ contents }}
 {% if notes|length > 0 %}
 ## Ref.
 
-{% for note in notes|sort(reverse=True) %}
-* [{{ note }}]({{ note.get_id() }})
+{% for b, note in notes %}
+* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 {% endif %}
 """
@@ -43,6 +43,9 @@ date: "{{ date }}"
 
 {% for b, note in entry_notes %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
+{% for b, n in entry_notes_to[note.get_id()] %}
+    * |{{ '%02d' % b }}| [{{ n }}]({{ n.get_id() }})
+{% endfor %}
 {% endfor %}
 
 {% for cluster in clusters %}
@@ -121,21 +124,11 @@ class Zettelkasten(object):
         if not self.exists(v):
             raise ValueError('No Note for ID: "{v}" found'.format(v=v))
         # Get Notes for all incoming vertices
-        edges_to = set([i for l in self.g.edges_to(v) for i in l])
-        return([self.get_note(u) for u in edges_to if u is not v])
-
-    def get_notes_from(self, v):
-        """Get all Notes that are connected from Note v.
-
-        :v: ID of Note
-        :returns: TODO
-
-        """
-        if not self.exists(v):
-            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
-        # Get Notes for all outgoing vertices
-        edges_from = set([i for l in self.g.edges_from(v) for i in l])
-        return([self.get_note(u) for u in edges_from if u is not v])
+        g = self.get_graph()
+        edges_to = set([i for l in g.edges_to(v) for i in l])
+        n = [(len(g.edges_to(u)), self.get_note(u)) for u in edges_to if
+             u is not v]
+        return sorted(n, key=lambda x: x[0], reverse=True)
 
     def get_graph(self):
         """Create a directed graph, using each Note as a vertex and the
@@ -230,14 +223,17 @@ class Zettelkasten(object):
         makes them the starting point for a train of thought by following the
         back links.
 
-        :returns: list of Note
+        :returns: list of tuple(Notes, {b, Note})
 
         """
         g = self.get_graph()
-        found = []
+        entry_notes = []
+        entry_notes_to = {}
         for v in [v for v in g.vertices() if len(g.edges_from(v)) == 0]:
-            found.append((len(g.edges_at(v)), self.get_note(v)))
-        return sorted(found, key=lambda x: x[0], reverse=True)
+            entry_notes.append((len(g.edges_to(v)), self.get_note(v)))
+            entry_notes_to[v] = self.get_notes_to(v)
+        return (sorted(entry_notes, key=lambda x: x[0], reverse=True),
+                entry_notes_to)
 
     def _index(self):
         """Get all vertices, sorted by number of edges (more edges = better
@@ -258,9 +254,11 @@ class Zettelkasten(object):
         :returns: Note
 
         """
+        entry_notes, entry_notes_to = self._entry_notes()
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
         return Note(0, contents=env.render(clusters=self._index(),
-                    entry_notes=self._entry_notes(),
+                    entry_notes=entry_notes,
+                    entry_notes_to=entry_notes_to,
                     date=datetime.utcnow().isoformat()))
 
     def _collect(self, v):
