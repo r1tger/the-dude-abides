@@ -5,7 +5,7 @@ from .note import Note
 from graph_tools import Graph
 from os import walk
 from os.path import join, splitext, isdir
-# from pprint import pprint
+from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
 
@@ -39,7 +39,7 @@ title: "Index"
 date: "{{ date }}"
 ---
 
-## Conn.
+## Entry
 
 {% for b, note in entry_notes %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
@@ -48,15 +48,31 @@ date: "{{ date }}"
 {% endfor %}
 {% endfor %}
 
-{% for cluster in clusters %}
+## Exit
+
+{% for b, note in exit_notes %}
+* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
+{% for i in exit_notes_from[note.get_id()] %}
+    * ID: {%+ for j in i %}[{{ j }}]({{ j }}){{ '.' if not loop.last }}{% endfor %}
+
+{% endfor %}
+{% endfor %}
+
+## Orphaned
+
+{% for b, note in orphaned_notes %}
+* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
+{% endfor %}
+
+{#{% for cluster in clusters %}
 ## {{ '%03d' % (loop.index) }}: {{ cluster[0][1].get_title() }}
 
 {% for b, note in cluster %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 
-{% endfor %}
-"""
+{% endfor %}#}
+"""    # noqa
 
 NOTE_COLLECTED = """{% for note in notes %}
 # {{ note.get_title() }} ({{ note.get_id() }})
@@ -235,6 +251,44 @@ class Zettelkasten(object):
         return (sorted(entry_notes, key=lambda x: x[0], reverse=True),
                 entry_notes_to)
 
+    def _exit_notes(self):
+        """Get a list of exit notes. Exit notes have no incoming edges, which
+        makes them the end point for a train of thought by following the
+        forward links.
+
+        :returns: list of tuple(Notes, {b, Note})
+
+        """
+        g = self.get_graph()
+        entry_notes, _ = self._entry_notes()
+        exit_notes = []
+        exit_notes_from = {}
+        for v in [v for v in g.vertices() if len(g.edges_to(v)) == 0]:
+            exit_notes.append((len(g.edges_from(v)), self.get_note(v)))
+            if v not in exit_notes_from:
+                exit_notes_from[v] = []
+            for b, n in entry_notes:
+                if not g.is_reachable(v, n.get_id()):
+                    continue
+                exit_notes_from[v] += [p[::-1] for p in
+                                       g.shortest_paths(v, n.get_id())]
+        return(sorted(exit_notes, key=lambda x: x[0], reverse=True),
+               exit_notes_from)
+
+    def _orphaned(self):
+        """Any Notes not part of a path between entry and exit are considered
+        orphaned. These Notes need additional work to become integrated into
+        the Zettelkasten. """
+        g = self.get_graph()
+        orphaned = set(g.vertices())
+        #
+        entry_notes, _ = self._entry_notes()
+        for b, note in entry_notes:
+            for n in self._train_of_thought(note.get_id()):
+                if n.get_id() in orphaned:
+                    orphaned.remove(n.get_id())
+        return([(len(g.edges_from(v)), self.get_note(v)) for v in orphaned])
+
     def _index(self):
         """Get all vertices, sorted by number of edges (more edges = better
         connected).
@@ -255,10 +309,14 @@ class Zettelkasten(object):
 
         """
         entry_notes, entry_notes_to = self._entry_notes()
+        exit_notes, exit_notes_from = self._exit_notes()
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
         return Note(0, contents=env.render(clusters=self._index(),
                     entry_notes=entry_notes,
                     entry_notes_to=entry_notes_to,
+                    exit_notes=exit_notes,
+                    exit_notes_from=exit_notes_from,
+                    orphaned_notes=self._orphaned(),
                     date=datetime.utcnow().isoformat()))
 
     def _collect(self, v):
