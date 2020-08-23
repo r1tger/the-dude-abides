@@ -130,6 +130,22 @@ class Zettelkasten(object):
              u is not v]
         return sorted(n, key=lambda x: x[0], reverse=True)
 
+    def get_notes_from(self, v):
+        """Get all Notes that refer from Note v.
+
+        :v: ID of Note
+        :returns: TODO
+
+        """
+        if not self.exists(v):
+            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
+        # Get Notes for all incoming vertices
+        g = self.get_graph()
+        edges_from = set([i for l in g.edges_from(v) for i in l])
+        n = [(len(g.edges_from(u)), self.get_note(u)) for u in edges_from if
+             u is not v]
+        return sorted(n, key=lambda x: x[0], reverse=True)
+
     def get_graph(self):
         """Create a directed graph, using each Note as a vertex and the
         Markdown links between Notes as edges. The graph is used to find
@@ -228,10 +244,12 @@ class Zettelkasten(object):
             for u in exit_notes:
                 if not g.is_reachable(u, v):
                     continue
-                if v not in exit_notes_from:
-                    exit_notes_from[v] = []
-                exit_notes_from[v].append((len(g.edges_from(u)),
-                                           self.get_note(u)))
+                exit_notes_from[v] = self.get_notes_from(u)
+
+                # if v not in exit_notes_from:
+                #     exit_notes_from[v] = []
+                # exit_notes_from[v].append((len(g.edges_from(u)),
+                #                            self.get_note(u)))
         return(sorted(entry_notes, key=lambda x: x[0], reverse=True),
                entry_notes_to, exit_notes_from)
 
@@ -247,7 +265,8 @@ class Zettelkasten(object):
             for n in self._train_of_thought(note.get_id()):
                 if n.get_id() in orphaned:
                     orphaned.remove(n.get_id())
-        return([(len(g.edges_from(v)), self.get_note(v)) for v in orphaned])
+        orphaned = [(len(g.edges_from(v)), self.get_note(v)) for v in orphaned]
+        return(sorted(orphaned, key=lambda x: x[0], reverse=True))
 
     def _index(self):
         """Get all vertices, sorted by number of edges (more edges = better
