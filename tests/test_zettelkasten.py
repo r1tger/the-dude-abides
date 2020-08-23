@@ -72,11 +72,6 @@ def test_exists(zettelkasten):
     assert(not zettelkasten.exists(99))
 
 
-def test_inbox(zettelkasten):
-    """ """
-    assert(len(list(zettelkasten.inbox())) == 1)
-
-
 def test_index(zettelkasten):
     """ """
     zettelkasten.index()

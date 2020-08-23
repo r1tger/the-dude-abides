@@ -57,8 +57,6 @@ def parse():
                         help='collect associated notes')
     parser.add_argument('--map', action='store_true',
                         help='map of notes in graphviz dot format')
-    parser.add_argument('--inbox', action='store_true',
-                        help='inbox containing unreferenced notes')
     parser.add_argument('--render', help='Render all notes as HTML')
     # Parse options
     return parser.parse_args()
@@ -155,17 +153,6 @@ def create_note(zettelkasten, title):
     edit_note(note, zettelkasten)
 
 
-def inbox(zettelkasten):
-    """TODO: Docstring for inbox.
-
-    :returns: TODO
-
-    """
-    # Get all notes without links (inbox)
-    for c, note in zettelkasten.inbox():
-        log.info('{v:>5}. {t} [{c}]'.format(v=note.get_id(), t=note, c=c))
-
-
 def index(zettelkasten):
     """TODO: Docstring for index.
 
@@ -202,8 +189,6 @@ def main():
             render_notes(zettelkasten, expanduser(options.render))
         if options.map:
             map_notes(zettelkasten)
-        if options.inbox:
-            inbox(zettelkasten)
     except KeyboardInterrupt:
         log.info('Received <ctrl-c>, stopping')
     except Exception as e:
