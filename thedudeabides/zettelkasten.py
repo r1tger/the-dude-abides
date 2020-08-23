@@ -130,22 +130,6 @@ class Zettelkasten(object):
              u is not v]
         return sorted(n, key=lambda x: x[0], reverse=True)
 
-    def get_notes_from(self, v):
-        """Get all Notes that refer from Note v.
-
-        :v: ID of Note
-        :returns: TODO
-
-        """
-        if not self.exists(v):
-            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
-        # Get Notes for all incoming vertices
-        g = self.get_graph()
-        edges_from = set([i for l in g.edges_from(v) for i in l])
-        n = [(len(g.edges_from(u)), self.get_note(u)) for u in edges_from if
-             u is not v]
-        return sorted(n, key=lambda x: x[0], reverse=True)
-
     def get_graph(self):
         """Create a directed graph, using each Note as a vertex and the
         Markdown links between Notes as edges. The graph is used to find
@@ -244,12 +228,12 @@ class Zettelkasten(object):
             for u in exit_notes:
                 if not g.is_reachable(u, v):
                     continue
-                exit_notes_from[v] = self.get_notes_from(u)
-
-                # if v not in exit_notes_from:
-                #     exit_notes_from[v] = []
-                # exit_notes_from[v].append((len(g.edges_from(u)),
-                #                            self.get_note(u)))
+                if v not in exit_notes_from:
+                    exit_notes_from[v] = []
+                exit_notes_from[v].append((len(g.edges_from(u)),
+                                           self.get_note(u)))
+            exit_notes_from[v] = sorted(exit_notes_from[v], key=lambda x: x[0],
+                                        reverse=True)
         return(sorted(entry_notes, key=lambda x: x[0], reverse=True),
                entry_notes_to, exit_notes_from)
 
@@ -268,19 +252,6 @@ class Zettelkasten(object):
         orphaned = [(len(g.edges_from(v)), self.get_note(v)) for v in orphaned]
         return(sorted(orphaned, key=lambda x: x[0], reverse=True))
 
-    def _index(self):
-        """Get all vertices, sorted by number of edges (more edges = better
-        connected).
-
-        :returns: generator of (nr_edges_at, Note)
-
-        """
-        g = self.get_graph()
-        for c in g.components():
-            # Get number of edges and Note for each vertex in the subgraph
-            notes = [(len(g.edges_from(v)), self.get_note(v)) for v in c]
-            yield(sorted(notes, key=lambda x: x[0], reverse=True))
-
     def index(self):
         """Create a markdown representation of the index of notes.
 
@@ -289,11 +260,9 @@ class Zettelkasten(object):
         """
         entry_notes, entry_notes_to, exit_notes_from = self._entry_notes()
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
-        return Note(0, contents=env.render(clusters=self._index(),
-                    entry_notes=entry_notes,
+        return Note(0, contents=env.render(entry_notes=entry_notes,
                     entry_notes_to=entry_notes_to,
-                    exit_notes_from=exit_notes_from,
-                    inbox_notes=self._inbox(),
+                    exit_notes_from=exit_notes_from, inbox_notes=self._inbox(),
                     date=datetime.utcnow().isoformat()))
 
     def _collect(self, v):
