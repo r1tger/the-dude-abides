@@ -9,6 +9,9 @@ from frontmatter import load, loads, dumps
 import logging
 log = logging.getLogger(__name__)
 
+ENTRY_NOTE = 'entry'
+
+
 HTML = """<!DOCTYPE html>
 <html lang="nl">
     <head>
@@ -175,6 +178,16 @@ class Note(object):
                     text = t.content
                 if t.type == 'link_close' and internal_link:
                     yield((text, href))
+
+    def is_entry(self):
+        """Is this Note an entry Note into the Zettelkasten?
+        :returns: True if Note is an entry note, False when not
+
+        """
+        try:
+            return self.get_tag('type') == ENTRY_NOTE
+        except ValueError:
+            return False
 
     def render(self):
         """Render the note to an HTML file.

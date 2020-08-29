@@ -39,6 +39,12 @@ title: "Index"
 date: "{{ date }}"
 ---
 
+{% for b, note in top_notes %}
+* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
+{% endfor %}
+
+# 0. Entry
+
 {% for b, note in entry_notes %}
 ## |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 
@@ -51,6 +57,7 @@ date: "{{ date }}"
 {% endfor %}
 
 {% endfor %}
+
 # 0. Inbox
 
 {% for b, note in inbox_notes %}
@@ -206,6 +213,14 @@ class Zettelkasten(object):
         return g.has_vertex(v)
         g = self.get_graph()
 
+    def _top_notes(self):
+        """ """
+        g = self.get_graph()
+        # Get a top 10 of most referred notes
+        notes = sorted([(len(g.edges_to(v)), self.get_note(v)) for v in
+                        g.vertices()], key=lambda x: x[0], reverse=True)[:10]
+        return notes
+
     def _entry_notes(self):
         """Get a list of entry notes. Entry notes have no outgoing edges, which
         makes them the starting point for a train of thought by following the
@@ -219,6 +234,7 @@ class Zettelkasten(object):
         entry_notes_to = {}
         exit_notes = [v for v in g.vertices() if len(g.edges_to(v)) == 0]
         exit_notes_from = {}
+        # for v in [v for v in g.vertices() if self.get_note(v).is_entry()]:
         for v in [v for v in g.vertices() if len(g.edges_from(v)) == 0]:
             # Skip inbox items
             if len(g.edges_from(v)) == 0 and len(g.edges_to(v)) == 0:
@@ -263,6 +279,7 @@ class Zettelkasten(object):
         return Note(0, contents=env.render(entry_notes=entry_notes,
                     entry_notes_to=entry_notes_to,
                     exit_notes_from=exit_notes_from, inbox_notes=self._inbox(),
+                    top_notes=self._top_notes(),
                     date=datetime.utcnow().isoformat()))
 
     def _collect(self, v):
