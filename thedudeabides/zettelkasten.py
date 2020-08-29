@@ -25,10 +25,19 @@ date: "{{ date }}"
 """
 
 NOTE_REFS = """{{ contents }}
-{% if notes|length > 0 %}
+{% if notes_to|length > 0  or notes_from %}
 ## Ref.
+{% endif %}
 
-{% for b, note in notes %}
+{% for b, note in notes_to %}
+* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
+{% endfor %}
+{% if notes_from %}
+---
+{% endif %}
+
+{% if notes_from %}
+{% for b, note in notes_from %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 {% endif %}
@@ -46,16 +55,7 @@ date: "{{ date }}"
 # 0. Entry
 
 {% for b, note in entry_notes %}
-## |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
-
-{% for b, n in entry_notes_to[note.get_id()] %}
-* |{{ '%02d' % b }}| [{{ n }}]({{ n.get_id() }})
-{% endfor %}
----
-{% for b, n in exit_notes_from[note.get_id()] %}
-* |{{ '%02d' % b }}| [{{ n }}]({{ n.get_id() }})
-{% endfor %}
-
+* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 
 # 0. Inbox
@@ -178,6 +178,14 @@ class Zettelkasten(object):
         # Return the populated graph
         return self.g
 
+    def is_entry_note(self, v):
+        """True if the note is an entry note. """
+        if not self.exists(v):
+            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
+        g = self.get_graph()
+        t, f = len(g.edges_to(v)), len(g.edges_from(v))
+        return (f == 0) and (t != 0)
+
     def create_note(self, title='', body=''):
         """Create a new Note using a template. Does not write the note to disk.
 
@@ -235,10 +243,7 @@ class Zettelkasten(object):
         exit_notes = [v for v in g.vertices() if len(g.edges_to(v)) == 0]
         exit_notes_from = {}
         # for v in [v for v in g.vertices() if self.get_note(v).is_entry()]:
-        for v in [v for v in g.vertices() if len(g.edges_from(v)) == 0]:
-            # Skip inbox items
-            if len(g.edges_from(v)) == 0 and len(g.edges_to(v)) == 0:
-                continue
+        for v in [v for v in g.vertices() if self.is_entry_note(v)]:
             entry_notes.append((len(g.edges_to(v)), self.get_note(v)))
             entry_notes_to[v] = self.get_notes_to(v)
             for u in exit_notes:
@@ -278,7 +283,8 @@ class Zettelkasten(object):
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
         return Note(0, contents=env.render(entry_notes=entry_notes,
                     entry_notes_to=entry_notes_to,
-                    exit_notes_from=exit_notes_from, inbox_notes=self._inbox(),
+                    exit_notes_from=exit_notes_from,
+                    inbox_notes=self._inbox(),
                     top_notes=self._top_notes(),
                     date=datetime.utcnow().isoformat()))
 
@@ -359,11 +365,16 @@ class Zettelkasten(object):
 
         """
         g = self.get_graph()
+        _, _, exit_notes_from = self._entry_notes()
         # Write all Notes to disk
         for n in [self.get_note(v) for v in g.vertices()]:
+            notes_from = None
+            if self.is_entry_note(n.get_id()):
+                notes_from = exit_notes_from[n.get_id()]
             # Render HTML template as a new Note
             env = Environment(trim_blocks=True).from_string(NOTE_REFS)
             note = Note(n.get_id(), contents=env.render(
                         contents=n.get_contents(),
-                        notes=self.get_notes_to(n.get_id())))
+                        notes_to=self.get_notes_to(n.get_id()),
+                        notes_from=notes_from))
             yield(note)
