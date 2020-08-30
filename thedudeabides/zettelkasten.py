@@ -179,12 +179,15 @@ class Zettelkasten(object):
         return self.g
 
     def is_entry_note(self, v):
-        """True if the note is an entry note. """
+        """True if the note is an entry note. Possible enhancement: use
+        Note::is_entry() to check if the user has set the note as an entry
+        notes.
+
+        """
         if not self.exists(v):
             raise ValueError('No Note for ID: "{v}" found'.format(v=v))
         g = self.get_graph()
-        t, f = len(g.edges_to(v)), len(g.edges_from(v))
-        return (f == 0) and (t != 0)
+        return (len(g.edges_from(v)) == 0) and (len(g.edges_to(v)) != 0)
 
     def create_note(self, title='', body=''):
         """Create a new Note using a template. Does not write the note to disk.
@@ -242,7 +245,6 @@ class Zettelkasten(object):
         entry_notes_to = {}
         exit_notes = [v for v in g.vertices() if len(g.edges_to(v)) == 0]
         exit_notes_from = {}
-        # for v in [v for v in g.vertices() if self.get_note(v).is_entry()]:
         for v in [v for v in g.vertices() if self.is_entry_note(v)]:
             entry_notes.append((len(g.edges_to(v)), self.get_note(v)))
             entry_notes_to[v] = self.get_notes_to(v)
