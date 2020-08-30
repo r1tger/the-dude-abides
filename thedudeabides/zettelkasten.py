@@ -52,7 +52,7 @@ date: "{{ date }}"
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 
-# 0. Entry
+# 0. Ingang
 
 {% for b, note in entry_notes %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
