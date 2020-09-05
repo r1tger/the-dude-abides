@@ -34,7 +34,7 @@ p, li, th, td {
 h1, h2, h3 {
     font-family: 'Open Sans', sans-serif;
     color: #d81e05;
-    padding: 0.3em;
+    padding: 0.3em 0.3em 0.3em 0;
 }
 
 h1 {
