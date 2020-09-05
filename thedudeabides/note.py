@@ -78,7 +78,7 @@ class Note(object):
             return self.renderToken(tokens, idx, options, env)
 
         # Parse the contents of the note
-        self.md = MarkdownIt('commonmark')
+        self.md = MarkdownIt('default')
         self.md.add_render_rule('link_open', render_link_open)
         self.T = self.md.parse(self.get_body())
 
