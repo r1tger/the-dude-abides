@@ -54,6 +54,11 @@ p, li {
     text-align: justify;
     text-justify: auto;
 }
+blockquote {
+    margin: 0;
+    border-left: .5em solid #e2e2e2;
+    padding-left: 1em;
+}
 img {
     clear: both;
     display: block;

@@ -5,7 +5,7 @@ from .note import Note
 from graph_tools import Graph
 from os import walk
 from os.path import join, splitext, isdir
-from pprint import pprint
+# from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
 
@@ -63,7 +63,7 @@ date: "{{ date }}"
 {% for b, note in inbox_notes %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
-"""    # noqa
+"""
 
 NOTE_COLLECTED = """{% for note in notes %}
 # {{ note.get_title() }} ({{ note.get_id() }})
@@ -222,7 +222,6 @@ class Zettelkasten(object):
         """
         g = self.get_graph()
         return g.has_vertex(v)
-        g = self.get_graph()
 
     def _top_notes(self):
         """ """
@@ -282,6 +281,7 @@ class Zettelkasten(object):
 
         """
         entry_notes, entry_notes_to, exit_notes_from = self._entry_notes()
+
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
         return Note(0, contents=env.render(entry_notes=entry_notes,
                     entry_notes_to=entry_notes_to,
