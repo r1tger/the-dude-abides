@@ -1,64 +1,98 @@
 @import url('http://fonts.googleapis.com/css?family=Open+Sans:400,700');
 @import url('http://fonts.googleapis.com/css?family=PT+Serif:400,400italic');
+
 html, body {
-    font-size: medium;
     display: flex;
     flex-flow: column;
     padding: 0;
     margin: 0;
-    line-height: 1.2;
     width: 100%;
     height: 100%;
+
+    font-size: medium;
+    font-family: 'PT Serif', serif;
+    line-height: 1.5em;
+    text-align: justify;
+    text-justify: auto;
 }
+
 iframe {
     overflow: hidden;
     overflow-y: hidden;
     border: none;
 }
+
 footer {
     border-top: 1px solid #d81e05;
     padding: 0.5em 0 0.5em 0;
 }
-a {
-    color: #d81e05;
-    font-family: 'Open Sans', sans-serif;
-    line-height: 1.5em;
-    text-decoration: none;
-    cursor: pointer;
+
+p, li, th, td {
+    color: #404040;
 }
+
 h1, h2, h3 {
     font-family: 'Open Sans', sans-serif;
     color: #d81e05;
+    padding: 0.3em;
 }
+
 h1 {
     border-bottom: 1px solid #d81e05;
     font-size: x-large;
 }
+
 h2 {
     font-size: large;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
 h3 {
     font-size: medium;
 }
+
+a {
+    color: #d81e05;
+    font-family: 'Open Sans', sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+}
+
 hr {
     border-top: 1px dashed #404040;
     border-width: 1px 0 0 0;
 }
-p, li {
-    color: #404040;
-    font-family: 'PT Serif', serif;
-    line-height: 1.5em;
-    text-align: justify;
-    text-justify: auto;
+
+table {
+    margin-bottom: 1em;
+    width: 100%;
+    border-collapse: collapse;
 }
+
+th, td {
+    padding: 0.3em;
+    vertical-align: top;
+}
+
+th {
+    font-family: 'Open Sans', sans-serif;
+    color: #d81e05;
+    border-bottom: 1px solid #d81e05;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
 blockquote {
     margin: 0;
-    border-left: .5em solid #e2e2e2;
+    border-left: .5em solid #f2f2f2;
     padding-left: 1em;
 }
+
 img {
     clear: both;
     display: block;
@@ -67,6 +101,7 @@ img {
     height: auto;
     border: 1px solid #404040;
 }
+
 .grid-container {
     flex: 1;
     display: flex;
@@ -74,10 +109,12 @@ img {
     white-space: nowrap;
     flex-grow: 1;
 }
+
 .grid {
     max-width: 100%;
     flex-grow: 1;
 }
+
 .page {
     white-space: normal;
     background: #ffffff;
@@ -92,9 +129,11 @@ img {
     vertical-align: top;
     box-sizing: border-box;
 }
+
 .page:last-child {
     margin-right: 15px;
 }
+
 .disabled {
     color: purple;
 }
