@@ -31,6 +31,10 @@ p, li, th, td {
     color: #404040;
 }
 
+ul {
+    margin-top: 0;
+}
+
 h1, h2, h3 {
     font-family: 'Open Sans', sans-serif;
     color: #d81e05;
@@ -47,6 +51,7 @@ h2 {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    margin-bottom: 0;
 }
 
 h3 {
