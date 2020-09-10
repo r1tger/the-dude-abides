@@ -29,6 +29,7 @@ footer {
 
 p, li, th, td {
     color: #404040;
+    margin-top: 0;
 }
 
 ul {
