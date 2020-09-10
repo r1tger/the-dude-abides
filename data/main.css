@@ -40,11 +40,17 @@ h1, h2, h3 {
     font-family: 'Open Sans', sans-serif;
     color: #d81e05;
     padding: 0.3em 0.3em 0.3em 0;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0;
 }
 
 h1 {
     border-bottom: 1px solid #d81e05;
     font-size: x-large;
+    margin-bottom: 1em;
 }
 
 h2 {
