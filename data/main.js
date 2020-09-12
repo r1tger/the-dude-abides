@@ -82,7 +82,8 @@ function initializeLinks(page, level) {
                 rawHref.indexOf("#") === 0 ||
                 rawHref.includes(".pdf") ||
                 rawHref.includes(".svg")
-            )
+            ) &&
+            !rawHref.includes("note=")
         ) {
             element.addEventListener("click", function (e) {
                 if (!e.ctrlKey && !e.metaKey) {

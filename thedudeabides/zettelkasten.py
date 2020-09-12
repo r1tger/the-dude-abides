@@ -39,9 +39,15 @@ NOTE_REFS = """{{ contents }}
 {% if notes_from %}
 {% for b, note in notes_from %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
-{% endfor %}
+{% if (ident, note.get_id()) in notes_path %}
+[{% for p in notes_path[(ident, note.get_id())] %}
+[{{ loop.index }}](?note={{ p|join('&amp;note=') }}){% if not loop.last %}, {% endif %}
+{% endfor %}]
 {% endif %}
-"""
+{% endfor %}
+
+{% endif %}
+"""    # noqa
 
 NOTE_INDEX = """---
 title: "Index"
@@ -244,12 +250,23 @@ class Zettelkasten(object):
         entry_notes_to = {}
         exit_notes = [v for v in g.vertices() if len(g.edges_to(v)) == 0]
         exit_notes_from = {}
+        exit_notes_path = {}
         for v in [v for v in g.vertices() if self.is_entry_note(v)]:
             entry_notes.append((len(g.edges_to(v)), self.get_note(v)))
             entry_notes_to[v] = self.get_notes_to(v)
             for u in exit_notes:
                 if not g.is_reachable(u, v):
                     continue
+
+                shortest_paths = []
+                for p in g.shortest_paths(u, v):
+                    if len(p) <= 2:
+                        continue
+                    shortest_paths.append(['%2F{}.html'.format(s)
+                                           for s in p[::-1]])
+                if len(shortest_paths) > 0:
+                    exit_notes_path[(v, u)] = shortest_paths
+
                 if v not in exit_notes_from:
                     exit_notes_from[v] = []
                 exit_notes_from[v].append((len(g.edges_from(u)),
@@ -257,7 +274,7 @@ class Zettelkasten(object):
             exit_notes_from[v] = sorted(exit_notes_from[v], key=lambda x: x[0],
                                         reverse=True)
         return(sorted(entry_notes, key=lambda x: x[0], reverse=True),
-               entry_notes_to, exit_notes_from)
+               entry_notes_to, exit_notes_from, exit_notes_path)
 
     def _inbox(self):
         """Any Notes not part of a path between entry and exit are considered
@@ -266,7 +283,7 @@ class Zettelkasten(object):
         g = self.get_graph()
         orphaned = set(g.vertices())
         #
-        entry_notes, _, _ = self._entry_notes()
+        entry_notes, _, _, _ = self._entry_notes()
         for b, note in entry_notes:
             for n in self._train_of_thought(note.get_id()):
                 if n.get_id() in orphaned:
@@ -280,7 +297,7 @@ class Zettelkasten(object):
         :returns: Note
 
         """
-        entry_notes, entry_notes_to, exit_notes_from = self._entry_notes()
+        entry_notes, entry_notes_to, exit_notes_from, _ = self._entry_notes()
 
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
         return Note(0, contents=env.render(entry_notes=entry_notes,
@@ -367,7 +384,7 @@ class Zettelkasten(object):
 
         """
         g = self.get_graph()
-        _, _, exit_notes_from = self._entry_notes()
+        _, _, exit_notes_from, exit_notes_path = self._entry_notes()
         # Write all Notes to disk
         for n in [self.get_note(v) for v in g.vertices()]:
             notes_from = None
@@ -376,7 +393,9 @@ class Zettelkasten(object):
             # Render HTML template as a new Note
             env = Environment(trim_blocks=True).from_string(NOTE_REFS)
             note = Note(n.get_id(), contents=env.render(
+                        ident=n.get_id(),
                         contents=n.get_contents(),
                         notes_to=self.get_notes_to(n.get_id()),
-                        notes_from=notes_from))
+                        notes_from=notes_from,
+                        notes_path=exit_notes_path))
             yield(note)
