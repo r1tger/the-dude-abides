@@ -38,32 +38,61 @@ function unstackNotes(level) {
     pages = pages.slice(0, level);
 }
 
-function fetchNote(href, level, animate = false) {
+function displayNote(href, text, level, animate=true) {
+    //
+    unstackNotes(level);
+    let container = document.querySelector(".grid");
+    let fragment = document.createElement("template");
+    fragment.innerHTML = text;
+    let element = fragment.content.querySelector(".page");
+    container.appendChild(element);
+    pages.push(URI(href).path());
+
+    setTimeout(
+        function (element, level) {
+            element.dataset.level = level + 1;
+            initializeLinks(element, level + 1);
+            element.scrollIntoView();
+            if (animate) {
+                element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
+            }
+        }.bind(null, element, level),
+        10
+    );
+}
+
+function fetchNotes(hrefs) {
+    // number of ajax requests to wait for
+    var count = hrefs.length;
+    // results of individual requests get stuffed here
+    var results = [];
+
+    // Empty urls don't display anything
+    hrefs.forEach(function(href, index) {
+        const request = new Request(href);
+        fetch(request)
+            .then((response) => response.text())
+            .then((text) => {
+                results[index] = text;
+                count = count - 1;
+                if (0 === count) {
+                    results.forEach(function(text, index) {
+                        displayNote(hrefs[index], text, index + 1);
+                    });
+                }
+            });
+    });
+}
+
+function fetchNote(href, level, animate=true) {
     level = Number(level) || pages.length;
 
     const request = new Request(href);
     fetch(request)
         .then((response) => response.text())
         .then((text) => {
-            unstackNotes(level);
-            let container = document.querySelector(".grid");
-            let fragment = document.createElement("template");
-            fragment.innerHTML = text;
-            let element = fragment.content.querySelector(".page");
-            container.appendChild(element);
-            pages.push(URI(href).path());
-
-            setTimeout(
-                function (element, level) {
-                    element.dataset.level = level + 1;
-                    initializeLinks(element, level + 1);
-                    element.scrollIntoView();
-                    if (animate) {
-                        element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
-                    }
-                }.bind(null, element, level),
-                10
-            );
+            // Render the note
+            displayNote(href, text, level);
         });
 }
 
@@ -92,7 +121,6 @@ function initializeLinks(page, level) {
                         fetchNote(element.href, this.dataset.level, (animate = true));
                     } else {
                         // blink element
-                        console.log("blink")
                         element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
                     }
                 }
@@ -115,8 +143,7 @@ window.onload = function () {
         if (!Array.isArray(stacks)) {
             stacks = [stacks];
         }
-        for (let i = 1; i <= stacks.length; i++) {
-            fetchNote(stacks[i - 1], i);
-        }
+        // Fetch all notes defined in the url
+        fetchNotes(stacks);
     }
 };
