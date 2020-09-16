@@ -189,6 +189,13 @@ class Note(object):
         except ValueError:
             return False
 
+    def is_hidden(self):
+        """ """
+        try:
+            return bool(self.get_tag('hide'))
+        except ValueError:
+            return False
+
     def render(self):
         """Render the note to an HTML file.
 

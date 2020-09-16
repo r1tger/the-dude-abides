@@ -5,7 +5,7 @@ from .note import Note
 from graph_tools import Graph
 from os import walk
 from os.path import join, splitext, isdir
-# from pprint import pprint
+from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
 
@@ -169,18 +169,27 @@ class Zettelkasten(object):
             self.g.set_vertex_attribute(v, ATTR_NOTE, note)
 
         # Once all Notes have been add, add edges
+        hidden = []
         for u in self.g.vertices():
             # Get all outgoing links from this Note
             note = self.g.get_vertex_attribute(u, ATTR_NOTE)
+            if note.is_hidden():
+                hidden.append(note.get_id())
             for text, v in note.get_links():
                 if not self.g.has_vertex(v):
                     log.error('Invalid link {v} in note {u}'.format(u=u, v=v))
                     continue
-
                 # Add an edge from this Note to each referenced Note
                 if not self.g.has_edge(u, v):
                     self.g.add_edge(u, v)
                     log.debug('Add edge from {u} to {v}'.format(u=u, v=v))
+
+        # Remove the train of thought for any hidden notes
+        for v in hidden:
+            log.info('Delete hidden vertex "{v}"'.format(v=v))
+            self.g.delete_vertices([n.get_id() for n in
+                                    self._train_of_thought(v)])
+
         # Return the populated graph
         return self.g
 
