@@ -9,8 +9,6 @@ from frontmatter import load, loads, dumps
 import logging
 log = logging.getLogger(__name__)
 
-ENTRY_NOTE = 'entry'
-
 
 HTML = """<!DOCTYPE html>
 <html lang="nl">
@@ -185,7 +183,7 @@ class Note(object):
 
         """
         try:
-            return self.get_tag('type') == ENTRY_NOTE
+            return bool(self.get_tag('entry'))
         except ValueError:
             return False
 

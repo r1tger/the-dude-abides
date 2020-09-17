@@ -149,3 +149,17 @@ img {
 .disabled {
     color: purple;
 }
+
+@media only screen and (max-width: 600px) {
+    body {
+        flex-direction: column;
+    }
+
+    .grid-container {
+        padding: 0;
+    }
+
+    .page {
+        padding-bottom: 150px;
+    }
+}
