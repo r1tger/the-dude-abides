@@ -32,11 +32,9 @@ NOTE_REFS = """{{ contents }}
 {% for b, note in notes_to %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
-{% if notes_from %}
----
-{% endif %}
 
 {% if notes_from %}
+---
 {% for b, note in notes_from %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% if (ident, note.get_id()) in notes_path %}
