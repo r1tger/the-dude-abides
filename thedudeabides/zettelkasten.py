@@ -59,7 +59,7 @@ date: "{{ date }}"
 # 0. Ingang
 
 {% for b, note in entry_notes %}
-* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
+{{ loop.index }}. |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 
 # 0. Inbox
