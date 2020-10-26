@@ -276,8 +276,11 @@ class Zettelkasten(object):
 
                 if v not in exit_notes_from:
                     exit_notes_from[v] = []
-                exit_notes_from[v].append((len(g.edges_from(u)),
-                                           self.get_note(u)))
+
+                # Only add exit notes which have a shortest path
+                if (v, u) in exit_notes_path:
+                    exit_notes_from[v].append((len(g.edges_from(u)),
+                                               self.get_note(u)))
             exit_notes_from[v] = sorted(exit_notes_from[v], key=lambda x: x[0],
                                         reverse=True)
         return(sorted(entry_notes, key=lambda x: x[0], reverse=True),
