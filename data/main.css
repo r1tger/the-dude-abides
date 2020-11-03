@@ -28,6 +28,11 @@ blockquote {
     padding-left: 1rem;
 }
 
+p {
+    text-align: justify;
+    text-justify: auto;
+}
+
 h1, h2, h3 {
     white-space: nowrap;
     overflow: hidden;
@@ -92,8 +97,6 @@ tr:nth-child(even) {
 
     white-space: normal;
     font-size: 1.6rem;
-    text-align: justify;
-    text-justify: auto;
 }
 
 .page:last-child {
