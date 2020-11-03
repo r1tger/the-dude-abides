@@ -15,6 +15,7 @@ HTML = """<!DOCTYPE html>
     <head>
         <meta charset="UTF-8"/>
         <title>{{ title }}</title>
+        <link rel="stylesheet" href="https://unpkg.com/wingcss"/>
         <link rel="stylesheet" href="main.css"/>
         <link href="/favicon.ico" rel="shortcut icon"/>
         <meta name="description" content="{{ title|e }}"/>
