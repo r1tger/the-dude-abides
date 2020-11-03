@@ -42,11 +42,11 @@ h1, h2, h3 {
 
 h1 {
     border-bottom: 1px solid #d81e05;
-    font-size: 3.6rem;
+    font-size: 3.8rem;
 }
 
-h2 { font-size: 2.6rem; }
-h3 { font-size: 1.6rem; }
+h2 { font-size: 2.8rem; }
+h3 { font-size: 1.8rem; }
 
 table {
     margin-bottom: 1rem;
@@ -87,7 +87,7 @@ tr:nth-child(even) {
     padding: 1rem 2rem;
     box-shadow: 0 0.8rem 1.4rem rgba(0, 0, 0, 0.25);
     display: inline-block;
-    width: 62rem;
+    width: 72rem;
     max-width: 90%;
     height: 100% !important;
     max-height: 100%;
@@ -96,14 +96,14 @@ tr:nth-child(even) {
     box-sizing: border-box;
 
     white-space: normal;
-    font-size: 1.6rem;
+    font-size: 1.8rem;
 }
 
 .page:last-child {
     margin-right: 1.5rem;
 }
 
-@media only screen and (max-width: 60rem) {
+@media only screen and (max-width: 70rem) {
     body {
         flex-direction: column;
     }
