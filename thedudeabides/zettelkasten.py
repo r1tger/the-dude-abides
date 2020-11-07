@@ -52,6 +52,8 @@ title: "Index"
 date: "{{ date }}"
 ---
 
+* |xx| [Register](register.html)
+---
 {% for b, note in top_notes %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
@@ -74,6 +76,22 @@ NOTE_COLLECTED = """{% for note in notes %}
 
 {{ note.get_body() }}
 
+{% endfor %}
+
+"""
+
+NOTE_REGISTER = """---
+title: "Register"
+date: "{{ date }}"
+---
+
+{% for k, v in notes %}
+
+## {{ k }}
+
+{% for note in v %}
+* [{{ note.get_title() }}]({{ note.get_id() }})
+{% endfor %}
 {% endfor %}
 
 """
@@ -345,6 +363,34 @@ class Zettelkasten(object):
         env = Environment(trim_blocks=True).from_string(NOTE_COLLECTED)
         return self.create_note(self.get_note(v).get_title(),
                                 env.render(notes=self._collect(v)))
+
+    def _register(self):
+        """TODO: Docstring for _all.
+
+        :returns: Dictionary of notes sorted by first letter
+
+        """
+        from itertools import groupby
+        from operator import itemgetter
+
+        g = self.get_graph()
+        # Get all notes and sort by first letter
+        notes = [(self.get_note(n).get_title()[0].upper(), self.get_note(n))
+                 for n in g.vertices()]
+        notes = sorted(notes, key=itemgetter(0))
+        # Group all notes by first letter
+        for k, group in groupby(notes, key=itemgetter(0)):
+            yield((k, [x[1] for x in sorted(group, key=lambda n: n[1].get_title())]))
+
+    def register(self):
+        """TODO: Docstring for all.
+
+        :returns: TODO
+
+        """
+        env = Environment(trim_blocks=True).from_string(NOTE_REGISTER)
+        return Note(0, 'Register', env.render(notes=self._register(),
+                    date=datetime.utcnow().isoformat()))
 
     def _train_of_thought(self, s):
         """Find a "train of thought", starting at the note with the provided

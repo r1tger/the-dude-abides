@@ -110,6 +110,9 @@ def render_notes(zettelkasten, output):
     # Write the index to disk
     with open(join(output, 'index.html'), 'w') as f:
         f.write(zettelkasten.index().render())
+    # Write the register to disk
+    with open(join(output, 'register.html'), 'w') as f:
+        f.write(zettelkasten.register().render())
 
 
 def collect_note(v, zettelkasten):
