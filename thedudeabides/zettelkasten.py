@@ -5,9 +5,11 @@ from .note import Note
 from graph_tools import Graph
 from os import walk
 from os.path import join, splitext, isdir
-from pprint import pprint
+# from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
+from itertools import groupby
+from operator import itemgetter
 
 import logging
 log = logging.getLogger(__name__)
@@ -45,7 +47,7 @@ NOTE_REFS = """{{ contents }}
 {% endfor %}
 
 {% endif %}
-"""    # noqa
+""" # noqa
 
 NOTE_INDEX = """---
 title: "Index"
@@ -89,12 +91,15 @@ date: "{{ date }}"
 
 ## {{ k }}
 
-{% for note in v %}
-* [{{ note.get_title() }}]({{ note.get_id() }})
+{% for note, ref in v %}
+* [{{ note.get_title() }}]({{ note.get_id() }}) {%+ for n in ref %}
+[{{ n.get_id() }}]({{ n.get_id() }}.html){% if not loop.last %}, {% endif %}
+{% endfor %}
+
 {% endfor %}
 {% endfor %}
 
-"""
+""" # noqa
 
 
 class Zettelkasten(object):
@@ -370,17 +375,18 @@ class Zettelkasten(object):
         :returns: Dictionary of notes sorted by first letter
 
         """
-        from itertools import groupby
-        from operator import itemgetter
-
         g = self.get_graph()
         # Get all notes and sort by first letter
-        notes = [(self.get_note(n).get_title()[0].upper(), self.get_note(n))
-                 for n in g.vertices()]
+        notes = []
+        for v in g.vertices():
+            ref = [self.get_note(u) for u in [u[0] for u in g.edges_to(v)]]
+            notes.append((self.get_note(v).get_title()[0].upper(),
+                         (self.get_note(v), ref)))
         notes = sorted(notes, key=itemgetter(0))
         # Group all notes by first letter
         for k, group in groupby(notes, key=itemgetter(0)):
-            yield((k, [x[1] for x in sorted(group, key=lambda n: n[1].get_title())]))
+            yield((k, [x[1] for x in sorted(group,
+                  key=lambda n: n[1][0].get_title())]))
 
     def register(self):
         """TODO: Docstring for all.
@@ -389,8 +395,10 @@ class Zettelkasten(object):
 
         """
         env = Environment(trim_blocks=True).from_string(NOTE_REGISTER)
-        return Note(0, 'Register', env.render(notes=self._register(),
+        note = Note(0, 'Register', env.render(notes=self._register(),
                     date=datetime.utcnow().isoformat()))
+        print(note.get_body())
+        return(note)
 
     def _train_of_thought(self, s):
         """Find a "train of thought", starting at the note with the provided
