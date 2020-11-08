@@ -29,7 +29,7 @@ HTML = """<!DOCTYPE html>
             <div class="grid">
                 <div class="page" data-level="1">
                     <div class="content">
-                        <h1>{{ ident }}. {{ title|e }}</h1>
+                        <h1>{% if display_id %}{{ ident }}. {% endif %}{{ title|e }}</h1>
                         {{ content }}
                     </div>
                 </div>
@@ -40,7 +40,7 @@ HTML = """<!DOCTYPE html>
     <script src="https://unpkg.com/urijs@1"></script>
     <script src="main.js" type="text/javascript"></script>
 </html>
-"""    # noqa
+""" # noqa
 
 
 class Note(object):
@@ -50,18 +50,20 @@ class Note(object):
 
     """
 
-    def __init__(self, ident, filename=None, contents=None):
+    def __init__(self, ident, filename=None, contents=None, display_id=True):
         """Constructor.
 
         :ident: unique identifier for the Note
         :filename: filename of Note file. Can be relative or absolute
         :contents: contents for Note. If not provided, filename is loaded on
                  first use
+        :display_id: True if ID must be output when rendering, False when not
 
         """
         self.ident = ident
         self.filename = filename
         self.contents = load(filename) if contents is None else loads(contents)
+        self.display_id = display_id
         self.front_matter = None
 
         def render_link_open(self, tokens, idx, options, env):
@@ -204,4 +206,5 @@ class Note(object):
         env = Environment().from_string(HTML)
         return env.render(title=self.get_title(),
                           ident=self.get_id(),
+                          display_id=self.display_id,
                           content=self.md.render(self.get_body()))

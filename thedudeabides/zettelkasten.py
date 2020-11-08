@@ -60,13 +60,13 @@ date: "{{ date }}"
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 
-# 0. Ingang
+# Ingang
 
 {% for b, note in entry_notes %}
 {{ loop.index }}. |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 
-# 0. Inbox
+# Inbox
 
 {% for b, note in inbox_notes %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
@@ -338,7 +338,7 @@ class Zettelkasten(object):
                     exit_notes_from=exit_notes_from,
                     inbox_notes=self._inbox(),
                     top_notes=self._top_notes(),
-                    date=datetime.utcnow().isoformat()))
+                    date=datetime.utcnow().isoformat()), display_id=False)
 
     def _collect(self, v):
         """Collect all Notes associated with the provided ID. All edges are
@@ -395,10 +395,8 @@ class Zettelkasten(object):
 
         """
         env = Environment(trim_blocks=True).from_string(NOTE_REGISTER)
-        note = Note(0, 'Register', env.render(notes=self._register(),
-                    date=datetime.utcnow().isoformat()))
-        print(note.get_body())
-        return(note)
+        return Note(0, 'Register', env.render(notes=self._register(),
+                    date=datetime.utcnow().isoformat()), display_id=False)
 
     def _train_of_thought(self, s):
         """Find a "train of thought", starting at the note with the provided
