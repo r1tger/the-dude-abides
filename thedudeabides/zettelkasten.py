@@ -379,7 +379,8 @@ class Zettelkasten(object):
         # Get all notes and sort by first letter
         notes = []
         for v in g.vertices():
-            ref = [self.get_note(u) for u in [u[0] for u in g.edges_to(v)]]
+            ref = [self.get_note(u) for u in [u[0] for u in
+                   sorted(g.edges_to(v), key=itemgetter(0))]]
             notes.append((self.get_note(v).get_title()[0].upper(),
                          (self.get_note(v), ref)))
         notes = sorted(notes, key=itemgetter(0))
