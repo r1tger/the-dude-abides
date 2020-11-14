@@ -5,7 +5,7 @@ from .note import Note
 from graph_tools import Graph
 from os import walk
 from os.path import join, splitext, isdir
-# from pprint import pprint
+from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
 from itertools import groupby
@@ -27,20 +27,13 @@ date: "{{ date }}"
 """
 
 NOTE_REFS = """{{ contents }}
-{% if notes_to|length > 0  or notes_from %}
+{% if notes_to|length > 0 %}
 ## Ref.
-{% endif %}
 
 {% for b, note in notes_to %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
-{% endfor %}
-
-{% if notes_from %}
----
-{% for b, note in notes_from %}
-* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
-{% if (ident, note.get_id()) in notes_path %}
-[{% for p in notes_path[(ident, note.get_id())] %}
+{% if (ident, note.get_id()) in path %}
+[{% for p in path[(ident, note.get_id())] %}
 [{{ loop.index }}](?note={{ p|join('&amp;note=') }}){% if not loop.last %}, {% endif %}
 {% endfor %}]
 {% endif %}
@@ -148,11 +141,14 @@ class Zettelkasten(object):
                     continue
                 yield((v, Note(v, join(root, name))))
 
-    def get_notes_to(self, v):
-        """Get all Notes that refer to Note v.
+    def get_notes_to(self, v, t=None):
+        """Get all Notes that refer to Note v. If list t is provided, paths are
+        resolved between vertex v and each vertex listed in t. The result is
+        added to the output.
 
         :v: ID of Note
-        :returns: TODO
+        :t: list of note IDs that must be used as a path target from v
+        :returns: tuple of tuple (ref, Note), dictionary of paths
 
         """
         if not self.exists(v):
@@ -160,9 +156,25 @@ class Zettelkasten(object):
         # Get Notes for all incoming vertices
         g = self.get_graph()
         edges_to = set([i for l in g.edges_to(v) for i in l])
+        # Append target notes if target is reachable from v
+        if t is not None:
+            edges_to |= set([u for u in t if u not in edges_to and
+                             g.is_reachable(u, v)])
+        path = {}
+        # Determine the shortest path for each referring note to v:w
+        for u in edges_to:
+            shortest_paths = []
+            for p in g.shortest_paths(u, v):
+                if len(p) <= 2:
+                    continue
+                shortest_paths.append(['%2F{}.html'.format(s)
+                                       for s in p[::-1]])
+            if len(shortest_paths) > 0:
+                path[(v, u)] = shortest_paths
+
         n = [(len(g.edges_to(u)), self.get_note(u)) for u in edges_to if
              u is not v]
-        return sorted(n, key=lambda x: x[0], reverse=True)
+        return (sorted(n, key=lambda x: x[0], reverse=True), path)
 
     def get_graph(self):
         """Create a directed graph, using each Note as a vertex and the
@@ -260,54 +272,42 @@ class Zettelkasten(object):
         return g.has_vertex(v)
 
     def _top_notes(self):
-        """ """
+        """ Get a top 10 of most referred notes. """
         g = self.get_graph()
-        # Get a top 10 of most referred notes
-        notes = sorted([(len(g.edges_to(v)), self.get_note(v)) for v in
-                        g.vertices()], key=lambda x: x[0], reverse=True)[:10]
-        return notes
+        return self._get_notes(g.vertices())[:10]
+
+    def _get_notes(self, vertices):
+        """ Create a list of notes n for use in templates.
+
+        :vertices: list of vertex IDs
+
+        """
+        g = self.get_graph()
+        notes = [(len(g.edges_to(u)), self.get_note(u)) for u in vertices]
+        return sorted(notes, key=lambda x: x[0], reverse=True)
+
+    def _exit_notes(self):
+        """ Get a list of exit notes. Exit notes have no incoming edges, which
+        makes them the ending point for a train of thought.
+
+        :returns: list of tuple(b, Note)
+
+        """
+        g = self.get_graph()
+        return self._get_notes([v for v in g.vertices()
+                                if len(g.edges_to(v)) == 0])
 
     def _entry_notes(self):
         """Get a list of entry notes. Entry notes have no outgoing edges, which
         makes them the starting point for a train of thought by following the
         back links.
 
-        :returns: list of tuple(Notes, {b, Note})
+        :returns: list of tuple(b, Note)
 
         """
         g = self.get_graph()
-        entry_notes = []
-        entry_notes_to = {}
-        exit_notes = [v for v in g.vertices() if len(g.edges_to(v)) == 0]
-        exit_notes_from = {}
-        exit_notes_path = {}
-        for v in [v for v in g.vertices() if self.is_entry_note(v)]:
-            entry_notes.append((len(g.edges_to(v)), self.get_note(v)))
-            entry_notes_to[v] = self.get_notes_to(v)
-            for u in exit_notes:
-                if not g.is_reachable(u, v):
-                    continue
-
-                shortest_paths = []
-                for p in g.shortest_paths(u, v):
-                    if len(p) <= 2:
-                        continue
-                    shortest_paths.append(['%2F{}.html'.format(s)
-                                           for s in p[::-1]])
-                if len(shortest_paths) > 0:
-                    exit_notes_path[(v, u)] = shortest_paths
-
-                if v not in exit_notes_from:
-                    exit_notes_from[v] = []
-
-                # Only add exit notes which have a shortest path
-                if (v, u) in exit_notes_path:
-                    exit_notes_from[v].append((len(g.edges_from(u)),
-                                               self.get_note(u)))
-            exit_notes_from[v] = sorted(exit_notes_from[v], key=lambda x: x[0],
-                                        reverse=True)
-        return(sorted(entry_notes, key=lambda x: x[0], reverse=True),
-               entry_notes_to, exit_notes_from, exit_notes_path)
+        return self._get_notes([v for v in g.vertices()
+                                if self.is_entry_note(v)])
 
     def _inbox(self):
         """Any Notes not part of a path between entry and exit are considered
@@ -316,7 +316,7 @@ class Zettelkasten(object):
         g = self.get_graph()
         orphaned = set(g.vertices())
         #
-        entry_notes, _, _, _ = self._entry_notes()
+        entry_notes = self._entry_notes()
         for b, note in entry_notes:
             for n in self._train_of_thought(note.get_id()):
                 if n.get_id() in orphaned:
@@ -330,15 +330,12 @@ class Zettelkasten(object):
         :returns: Note
 
         """
-        entry_notes, entry_notes_to, exit_notes_from, _ = self._entry_notes()
-
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
-        return Note(0, contents=env.render(entry_notes=entry_notes,
-                    entry_notes_to=entry_notes_to,
-                    exit_notes_from=exit_notes_from,
-                    inbox_notes=self._inbox(),
-                    top_notes=self._top_notes(),
-                    date=datetime.utcnow().isoformat()), display_id=False)
+        return Note(0, contents=env.render(entry_notes=self._entry_notes(),
+                                           inbox_notes=self._inbox(),
+                                           top_notes=self._top_notes(),
+                                           date=datetime.utcnow().isoformat()),
+                    display_id=False)
 
     def _collect(self, v):
         """Collect all Notes associated with the provided ID. All edges are
@@ -447,18 +444,15 @@ class Zettelkasten(object):
 
         """
         g = self.get_graph()
-        _, _, exit_notes_from, exit_notes_path = self._entry_notes()
+        exit_notes = [n.get_id() for b, n in self._exit_notes()]
         # Write all Notes to disk
         for n in [self.get_note(v) for v in g.vertices()]:
-            notes_from = None
-            if self.is_entry_note(n.get_id()):
-                notes_from = exit_notes_from[n.get_id()]
+            notes_to, path = self.get_notes_to(n.get_id(), exit_notes)
             # Render HTML template as a new Note
             env = Environment(trim_blocks=True).from_string(NOTE_REFS)
             note = Note(n.get_id(), contents=env.render(
                         ident=n.get_id(),
                         contents=n.get_contents(),
-                        notes_to=self.get_notes_to(n.get_id()),
-                        notes_from=notes_from,
-                        notes_path=exit_notes_path))
+                        notes_to=notes_to,
+                        path=path))
             yield(note)
