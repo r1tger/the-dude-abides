@@ -477,6 +477,7 @@ class Zettelkasten(object):
         """
         g = self.get_graph()
         exit_notes = [n.get_id() for b, n in self._exit_notes()]
+        log.info('Exit notes: {n}'.format(n=', '.join(map(str, exit_notes))))
         # Write all Notes to disk
         for n in [self.get_note(v) for v in g.vertices()]:
             notes_to, path = self.get_notes_to(n.get_id(), exit_notes)
