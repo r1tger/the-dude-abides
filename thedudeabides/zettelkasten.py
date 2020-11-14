@@ -10,6 +10,7 @@ from datetime import datetime
 from jinja2 import Environment
 from itertools import groupby
 from operator import itemgetter
+from statistics import mean
 
 import logging
 log = logging.getLogger(__name__)
@@ -79,6 +80,16 @@ NOTE_REGISTER = """---
 title: "Register"
 date: "{{ date }}"
 ---
+
+{% if stats %}
+|Note           |Total                  |Average                   |
+|:--------------|----------------------:|-------------------------:|
+|Notes          |{{ stats.nr_vertices }}|n.a.                      |
+|Links          |{{ stats.nr_edges }}   |{{ stats.avg_edges }}     |
+|Least connected|{{ stats.min_edges }}  |n.a.                      |
+|Most connected |{{ stats.max_edges }}  |n.a.                      |
+|Word count     |{{ stats.word_count }} |{{ stats.avg_word_count }}|
+{% endif %}
 
 {% for k, v in notes %}
 
@@ -226,10 +237,30 @@ class Zettelkasten(object):
         # Return the populated graph
         return self.g
 
+    def get_stats(self):
+        """ Get information about the Zettelkasten. """
+        g = self.get_graph()
+        stats = {}
+
+        # Number of notes
+        stats['nr_vertices'] = len(g.vertices())
+        # Number of links between notes
+        stats['nr_edges'] = len(g.edges())
+        edges = [len(g.edges_at(v)) for v in g.vertices()]
+        stats['avg_edges'] = int(mean(edges))
+        stats['min_edges'] = int(min(edges))
+        stats['max_edges'] = int(max(edges))
+        # Average word count
+        wc = [n.get_word_count() for b, n in self._get_notes(g.vertices())]
+        stats['word_count'] = sum(wc)
+        stats['avg_word_count'] = int(mean(wc))
+        # Statistics
+        return stats
+
     def is_entry_note(self, v):
         """True if the note is an entry note. Possible enhancement: use
         Note::is_entry() to check if the user has set the note as an entry
-        notes.
+        note.
 
         """
         if not self.exists(v):
@@ -321,8 +352,7 @@ class Zettelkasten(object):
             for n in self._train_of_thought(note.get_id()):
                 if n.get_id() in orphaned:
                     orphaned.remove(n.get_id())
-        orphaned = [(len(g.edges_from(v)), self.get_note(v)) for v in orphaned]
-        return(sorted(orphaned, key=lambda x: x[0], reverse=True))
+        return self._get_notes(orphaned)
 
     def index(self):
         """Create a markdown representation of the index of notes.
@@ -367,7 +397,7 @@ class Zettelkasten(object):
                                 env.render(notes=self._collect(v)))
 
     def _register(self):
-        """TODO: Docstring for _all.
+        """Collect all notes and group by first leter of note title.
 
         :returns: Dictionary of notes sorted by first letter
 
@@ -387,13 +417,15 @@ class Zettelkasten(object):
                   key=lambda n: n[1][0].get_title())]))
 
     def register(self):
-        """TODO: Docstring for all.
+        """Create a registry of all notes, sorted by first letter of note
+        title.
 
-        :returns: TODO
+        :returns Note with register
 
         """
         env = Environment(trim_blocks=True).from_string(NOTE_REGISTER)
         return Note(0, 'Register', env.render(notes=self._register(),
+                    stats=self.get_stats(),
                     date=datetime.utcnow().isoformat()), display_id=False)
 
     def _train_of_thought(self, s):

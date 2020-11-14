@@ -180,6 +180,10 @@ class Note(object):
                 if t.type == 'link_close' and internal_link:
                     yield((text, href))
 
+    def get_word_count(self):
+        """ Quick & dirty way to get word count """
+        return len(self.get_body().split())
+
     def is_entry(self):
         """Is this Note an entry Note into the Zettelkasten?
         :returns: True if Note is an entry note, False when not
