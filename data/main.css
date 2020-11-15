@@ -29,8 +29,8 @@ blockquote {
 }
 
 p {
-    text-align: justify;
-    text-justify: auto;
+    /*text-align: justify;
+    text-justify: auto;*/
 }
 
 h1, h2, h3 {
