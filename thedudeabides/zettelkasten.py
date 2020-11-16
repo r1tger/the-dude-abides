@@ -82,13 +82,15 @@ date: "{{ date }}"
 ---
 
 {% if stats %}
-|Note           |Total                  |Average                   |
+|Notities       |Totaal                 |Gemiddeld                 |
 |:--------------|----------------------:|-------------------------:|
-|Notes          |{{ stats.nr_vertices }}|n.a.                      |
-|Links          |{{ stats.nr_edges }}   |{{ stats.avg_edges }}     |
-|Least connected|{{ stats.min_edges }}  |n.a.                      |
-|Most connected |{{ stats.max_edges }}  |n.a.                      |
-|Word count     |{{ stats.word_count }} |{{ stats.avg_word_count }}|
+|Notities       |{{ stats.nr_vertices }}|n.v.t.                    |
+|Relaties       |{{ stats.nr_edges }}   |{{ stats.avg_edges }}     |
+|Meest verbonden|{{ stats.min_edges }}  |n.v.t.                    |
+|Minst verbonden|{{ stats.max_edges }}  |n.v.t.                    |
+|Aantal woorden |{{ stats.word_count }} |{{ stats.avg_word_count }}|
+|Ingangnotities |{{ stats.nr_entry }}   |{{ stats.nr_entry_perc }}%|
+|Uitgangnotities|{{ stats.nr_exit }}    |{{ stats.nr_exit_perc }}% |
 {% endif %}
 
 {% for k, v in notes %}
@@ -241,7 +243,6 @@ class Zettelkasten(object):
         """ Get information about the Zettelkasten. """
         g = self.get_graph()
         stats = {}
-
         # Number of notes
         stats['nr_vertices'] = len(g.vertices())
         # Number of links between notes
@@ -254,6 +255,11 @@ class Zettelkasten(object):
         wc = [n.get_word_count() for b, n in self._get_notes(g.vertices())]
         stats['word_count'] = sum(wc)
         stats['avg_word_count'] = int(mean(wc))
+        # Entry & exit notes
+        stats['nr_entry'] = len(list(self._entry_notes()))
+        stats['nr_entry_perc'] = int((stats['nr_entry'] / stats['nr_vertices']) * 100)
+        stats['nr_exit'] = len(list(self._exit_notes()))
+        stats['nr_exit_perc'] = int((stats['nr_exit'] / stats['nr_vertices']) * 100)
         # Statistics
         return stats
 
