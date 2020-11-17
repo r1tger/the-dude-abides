@@ -257,22 +257,25 @@ class Zettelkasten(object):
         stats['avg_word_count'] = int(mean(wc))
         # Entry & exit notes
         stats['nr_entry'] = len(list(self._entry_notes()))
-        stats['nr_entry_perc'] = int((stats['nr_entry'] / stats['nr_vertices']) * 100)
+        stats['nr_entry_perc'] = int((stats['nr_entry'] /
+                                      stats['nr_vertices']) * 100)
         stats['nr_exit'] = len(list(self._exit_notes()))
-        stats['nr_exit_perc'] = int((stats['nr_exit'] / stats['nr_vertices']) * 100)
+        stats['nr_exit_perc'] = int((stats['nr_exit'] /
+                                     stats['nr_vertices']) * 100)
         # Statistics
         return stats
 
     def is_entry_note(self, v):
-        """True if the note is an entry note. Possible enhancement: use
-        Note::is_entry() to check if the user has set the note as an entry
-        note.
+        """True if the note is an entry note. Note::is_entry() is used to check
+        if a note is an entry note, all other entry notes are added by default.
 
         """
         if not self.exists(v):
             raise ValueError('No Note for ID: "{v}" found'.format(v=v))
         g = self.get_graph()
-        return (len(g.edges_from(v)) == 0) and (len(g.edges_to(v)) != 0)
+        n = self.get_note(v)
+        return ((len(g.edges_from(v)) == 0) and (len(g.edges_to(v)) != 0) or
+                n.is_entry())
 
     def create_note(self, title='', body=''):
         """Create a new Note using a template. Does not write the note to disk.
@@ -357,6 +360,8 @@ class Zettelkasten(object):
         for b, note in entry_notes:
             for n in self._train_of_thought(note.get_id()):
                 if n.get_id() in orphaned:
+                    orphaned.remove(n.get_id())
+                if n.get_id() in orphaned and n.is_entry():
                     orphaned.remove(n.get_id())
         return self._get_notes(orphaned)
 
