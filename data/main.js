@@ -102,7 +102,6 @@ function initializeLinks(page, level) {
     links.forEach(async function (element) {
         var rawHref = element.getAttribute("href");
         element.dataset.level = level;
-
         if (
             rawHref &&
             !(
@@ -114,11 +113,14 @@ function initializeLinks(page, level) {
             ) &&
             !rawHref.includes("note=")
         ) {
+            if (-1 != pages.indexOf("/" + rawHref)) {
+                element.className = "highlight"
+            }
             element.addEventListener("click", function (e) {
                 if (!e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
                     if (stackNote(element.href, this.dataset.level)) {
-                        fetchNote(element.href, this.dataset.level, (animate = true));
+                        fetchNote(element.href, this.dataset.level, (animate=true));
                     } else {
                         // blink element
                         element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
