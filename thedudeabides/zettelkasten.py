@@ -86,8 +86,8 @@ date: "{{ date }}"
 |:--------------|----------------------:|-------------------------:|
 |Notities       |{{ stats.nr_vertices }}|n.v.t.                    |
 |Relaties       |{{ stats.nr_edges }}   |{{ stats.avg_edges }}     |
-|Meest verbonden|{{ stats.min_edges }}  |n.v.t.                    |
-|Minst verbonden|{{ stats.max_edges }}  |n.v.t.                    |
+|Minst verbonden|{{ stats.min_edges }}  |n.v.t.                    |
+|Meest verbonden|{{ stats.max_edges }}  |n.v.t.                    |
 |Aantal woorden |{{ stats.word_count }} |{{ stats.avg_word_count }}|
 |Ingangnotities |{{ stats.nr_entry }}   |{{ stats.nr_entry_perc }}%|
 |Uitgangnotities|{{ stats.nr_exit }}    |{{ stats.nr_exit_perc }}% |
@@ -174,7 +174,7 @@ class Zettelkasten(object):
             edges_to |= set([u for u in t if u not in edges_to and
                              g.is_reachable(u, v)])
         path = {}
-        # Determine the shortest path for each referring note to v:w
+        # Determine the shortest path for each referring note to v
         for u in edges_to:
             shortest_paths = []
             for p in g.shortest_paths(u, v):
@@ -425,7 +425,7 @@ class Zettelkasten(object):
         # Group all notes by first letter
         for k, group in groupby(notes, key=itemgetter(0)):
             yield((k, [x[1] for x in sorted(group,
-                  key=lambda n: n[1][0].get_title())]))
+                  key=lambda n: n[1][0].get_title().lower())]))
 
     def register(self):
         """Create a registry of all notes, sorted by first letter of note
