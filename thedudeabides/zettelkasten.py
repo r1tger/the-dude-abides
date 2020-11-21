@@ -189,6 +189,10 @@ class Zettelkasten(object):
              u is not v]
         return (sorted(n, key=lambda x: x[0], reverse=True), path)
 
+    def get_filename(self, v):
+        """Create a filename based on Note ID. """
+        return(join(self.zettelkasten, '{v}.{e}'.format(v=v, e=EXT_NOTE)))
+
     def get_graph(self):
         """Create a directed graph, using each Note as a vertex and the
         Markdown links between Notes as edges. The graph is used to find
@@ -294,8 +298,7 @@ class Zettelkasten(object):
         # Get largest Note ID, increment by 1
         v = max(n) + 1 if len(n) > 0 else 1
         # Compose filename
-        filename = join(self.zettelkasten, '{v}.{e}'.format(v=v, e=EXT_NOTE))
-        note = Note(v, filename, contents)
+        note = Note(v, self.get_filename(v), contents)
         # Add note to graph, so Zettelkasten::exists() works
         g.add_vertex(v)
         g.set_vertex_attribute(v, ATTR_NOTE, note)

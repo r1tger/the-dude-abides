@@ -9,6 +9,7 @@ setup(
     author_email='github@ritger.nl',
     packages=['thedudeabides'],
     install_requires=[
+        'click',
         'graph-tools',
         'jinja2',
         'markdown-it-py',

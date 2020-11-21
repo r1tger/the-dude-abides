@@ -1,3 +1,4 @@
+click
 graph-tools
 jinja2
 markdown-it-py

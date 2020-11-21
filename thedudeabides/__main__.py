@@ -3,202 +3,132 @@
 
 from .zettelkasten import Zettelkasten
 
-from argparse import ArgumentParser
+from click import (option, Path, pass_context, group, argument,
+                   make_pass_decorator, INT)
 from os import environ
-from os.path import expanduser, join, isdir
+from os.path import join
 # from pprint import pprint
-from subprocess import call, run
+from subprocess import run
 from sys import exit
 
 import logging
 log = logging.getLogger(__name__)
 
-LOG_FORMAT = '[%(levelname)s] %(message)s'
+LOG_FORMAT = '[%(levelname)s] [%(relativeCreated)d] %(message)s'
+EDITOR = 'vim'
+
+# Make the Zettelkasten instance available as a decorator for click
+pass_zk = make_pass_decorator(Zettelkasten)
 
 
-def logger(options):
-    """ """
-    # Set up logging
-    if options.log:
-        handler = logging.FileHandler(options.log)
-    else:
-        handler = logging.StreamHandler()
+def edit_note(note, output='-'):
+    """Open the default editor and send output over stdin.
+
+    :note: Note to send to the editor.
+    :output: filename of file to edit, or stdin as default.
+
+    """
+    editor = environ['EDITOR'] if 'EDITOR' in environ else EDITOR
+    input = note.get_contents() if output == '-' else None
+    return run([editor, '-c', 'set ft=markdown', output], input=input,
+               text=True)
+
+
+@group()
+@option('--zettelkasten', type=Path(exists=True, dir_okay=True,
+        resolve_path=True), help='Directory containing the zettelkasten.',
+        default='.')
+@option('--debug', is_flag=True, default=False, help='Enable debug mode.')
+@pass_context
+def main(ctx, zettelkasten, debug):
+    """That's just like, your opinon, man.
+    """
+    # Setup logging
+    handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter(LOG_FORMAT))
     # Add handler to the root log
     logging.root.addHandler(handler)
     # Set log level
-    level = logging.DEBUG if options.debug else logging.INFO
+    level = logging.DEBUG if debug else logging.INFO
     logging.root.setLevel(level)
+    # Allow the Zettelkasten instance to be passed between functions
+    ctx.obj = Zettelkasten(zettelkasten)
 
 
-def parse():
-    """Parse command line options.
-
-    :returns: Namespace
-
-    """
-    parser = ArgumentParser()
-    # Shared
-    parser.add_argument('--debug', help='enable debug mode',
-                        action='store_true', default=False)
-    parser.add_argument('--log', help='log file')
-    parser.add_argument('--zettelkasten', default='.',
-                        help='directory containing the zettelkasten')
-    # Note specific
-    parser.add_argument('--create', default='',
-                        help='create a new note, providing the title')
-    parser.add_argument('-e', '--edit', type=int,
-                        help='edit a note by ID')
-    parser.add_argument('-i', '--index', action='store_true',
-                        help='show an index of clustered notes')
-    parser.add_argument('-c', '--collect', type=int,
-                        help='collect associated notes')
-    parser.add_argument('-t', '--train-of-thought', type=int,
-                        help='collect associated notes')
-    parser.add_argument('--map', action='store_true',
-                        help='map of notes in graphviz dot format')
-    parser.add_argument('--render', help='Render all notes as HTML')
-    # Parse options
-    return parser.parse_args()
-
-
-def output_note(output):
-    """Open the default editor and send output over stdin.
-
-    :output: text to send to the editor over stdin
-
-    """
-    editor = environ['EDITOR'] if 'EDITOR' in environ else 'vim'
-    return run([editor, '-c', 'set ft=markdown', '-'], input=output, text=True)
-
-
-def train_of_thought(v, zettelkasten):
-    """Display the train of though for a Note.
-
-    :v: id of Note to start from
-    :zettelkasten: zettelkasten instance to query
-    :returns: TODO
-
+@main.command()
+@argument('v', type=INT)
+@pass_zk
+def choo_choo(zk, v):
+    """Collect train of thought by ID.
     """
     log.info('Collecting train of thought for "{v}"'.format(v=v))
-    output_note(zettelkasten.train_of_thought(v).get_contents())
+    edit_note(zk.train_of_thought(v))
 
 
-def map_notes(zettelkasten):
-    """ """
-    # Create the graph and write to [output]
-    output_note(zettelkasten.get_graph().export_dot())
-
-
-def render_notes(zettelkasten, output):
-    """TODO: Docstring for render_notes.
-
-    :zettelkasten: TODO
-    :output: TODO
-    :returns: TODO
-
+@main.command()
+@argument('v', type=INT)
+@pass_zk
+def collect(zk, v):
+    """Collect associated notes by ID.
     """
-    log.info('Rendering notes')
-    if not isdir(output):
-        raise ValueError('Invalid output directory provided')
+    log.info('Collecting Notes for "{v}"'.format(v=v))
+    edit_note(zk.collect(v))
 
-    for note in zettelkasten.render():
+
+@main.command()
+@argument('title')
+@pass_zk
+def create(zk, title):
+    """Create a new note, providing the title.
+    """
+    note = zk.create_note(title)
+    # Write template to file
+    with open(note.get_filename(), 'w') as f:
+        f.write(note.get_contents())
+    log.info('Created new note "{f}"'.format(f=note.get_filename()))
+    # Edit the Note
+    edit_note(note, note.get_filename())
+
+
+@main.command()
+@argument('v', type=INT)
+@pass_zk
+def edit(zk, v):
+    """Edit a note by ID.
+    """
+    log.info('Editing note "{v}"'.format(v=v))
+    # Get Note to edit
+    note = zk.get_note(v)
+    edit_note(note, note.get_filename())
+
+
+@main.command()
+@pass_zk
+def index(zk):
+    """Show an index of clustered notes.
+    """
+    log.info('Collecting Notes')
+    edit_note(zk.index())
+
+
+@main.command()
+@argument('output', type=Path(exists=True, dir_okay=True, resolve_path=True))
+@pass_zk
+def render(zk, output):
+    """Render all notes as HTML.
+    """
+    log.info('Rendering notes to "{d}"'.format(d=output))
+    for note in zk.render():
         # Write to disk
         filename = join(output, '{v}.html'.format(v=note.get_id()))
         with open(filename, 'w') as f:
             f.write(note.render())
     # Write the index to disk
     with open(join(output, 'index.html'), 'w') as f:
-        f.write(zettelkasten.index().render())
+        f.write(zk.index().render())
     # Write the register to disk
     with open(join(output, 'register.html'), 'w') as f:
-        f.write(zettelkasten.register().render())
-
-
-def collect_note(v, zettelkasten):
-    """TODO: Docstring for collect_note.
-
-    :v: TODO
-    :zettelkasten: TODO
-    :returns: TODO
-
-    """
-    log.info('Collecting Notes for "{v}"'.format(v=v))
-    output_note(zettelkasten.collect(v).get_contents())
-
-
-def edit_note(note, zettelkasten):
-    """TODO: Docstring for edit_note.
-
-    :zettelkasten: TODO
-    :returns: TODO
-
-    """
-    if not zettelkasten.exists(note.get_id()):
-        raise ValueError('No Note for ID: "{i}" found'.format(i=note.get_id()))
-    log.info('Editing note "{i}"'.format(i=note.get_id()))
-    # Start $EDITOR, if set
-    editor = environ['EDITOR'] if 'EDITOR' in environ else 'vim'
-    call([editor, note.get_filename()])
-
-
-def create_note(zettelkasten, title):
-    """TODO: Docstring for create_note.
-    :returns: TODO
-
-    """
-    note = zettelkasten.create_note(title)
-    # Write template to file
-    with open(note.get_filename(), 'w') as f:
-        f.write(note.get_contents())
-    log.info('Created new note "{f}"'.format(f=note.get_filename()))
-    # Edit the Note
-    edit_note(note, zettelkasten)
-
-
-def index(zettelkasten):
-    """TODO: Docstring for index.
-
-    :zettelkasten: TODO
-    :returns: TODO
-
-    """
-    log.info('Collecting Notes')
-    output_note(zettelkasten.index().get_contents())
-
-
-def main():
-    """ Main entry point """
-    options = parse()
-    try:
-        # Setup logging
-        logger(options)
-        log.info('{s:-^80}'.format(s=" That's just like, your opinon, man "))
-
-        zettelkasten = Zettelkasten(expanduser(options.zettelkasten))
-
-        # Do command line arguments
-        if options.collect:
-            collect_note(options.collect, zettelkasten)
-        if options.create:
-            create_note(zettelkasten, options.create)
-        if options.edit:
-            edit_note(zettelkasten.get_note(options.edit), zettelkasten)
-        if options.index:
-            index(zettelkasten)
-        if options.train_of_thought:
-            train_of_thought(options.train_of_thought, zettelkasten)
-        if options.render:
-            render_notes(zettelkasten, expanduser(options.render))
-        if options.map:
-            map_notes(zettelkasten)
-    except KeyboardInterrupt:
-        log.info('Received <ctrl-c>, stopping')
-    except Exception as e:
-        log.exception(e) if options.debug else log.error(e)
-    finally:
-        log.info('{s:-^80}'.format(s=" Fuck it dude. Let's go bowling "))
-        return(0)
+        f.write(zk.register().render())
 
 
 if __name__ == "__main__":
