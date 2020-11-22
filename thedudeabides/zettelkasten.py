@@ -82,15 +82,15 @@ date: "{{ date }}"
 ---
 
 {% if stats %}
-|Notities       |Totaal                 |Gemiddeld                 |
-|:--------------|----------------------:|-------------------------:|
-|Notities       |{{ stats.nr_vertices }}|n.v.t.                    |
-|Relaties       |{{ stats.nr_edges }}   |{{ stats.avg_edges }}     |
-|Minst verbonden|{{ stats.min_edges }}  |n.v.t.                    |
-|Meest verbonden|{{ stats.max_edges }}  |n.v.t.                    |
-|Aantal woorden |{{ stats.word_count }} |{{ stats.avg_word_count }}|
-|Ingangnotities |{{ stats.nr_entry }}   |{{ stats.nr_entry_perc }}%|
-|Uitgangnotities|{{ stats.nr_exit }}    |{{ stats.nr_exit_perc }}% |
+|Notities           |Totaal                 |Gemiddeld                 |
+|:------------------|----------------------:|-------------------------:|
+|Notities           |{{ stats.nr_vertices }}|n.v.t.                    |
+|Relaties           |{{ stats.nr_edges }}   |{{ stats.avg_edges }}     |
+|Minst verbonden    |{{ stats.min_edges }}  |n.v.t.                    |
+|Meest verbonden    |{{ stats.max_edges }}  |n.v.t.                    |
+|Aantal woorden     |{{ stats.word_count }} |{{ stats.avg_word_count }}|
+|Ingangnotities     |{{ stats.nr_entry }}   |{{ stats.nr_entry_perc }}%|
+|Uitgangnotities (Ω)|{{ stats.nr_exit }}    |{{ stats.nr_exit_perc }}% |
 {% endif %}
 
 {% for k, v in notes %}
@@ -98,7 +98,7 @@ date: "{{ date }}"
 ## {{ k }}
 
 {% for note, ref in v %}
-* [{{ note.get_title() }}]({{ note.get_id() }}) {%+ for n in ref %}
+* {%if note.get_id() in exit_notes %}Ω {% endif %}[{{ note.get_title() }}]({{ note.get_id() }}) {%+ for n in ref %}
 [{{ n.get_id() }}]({{ n.get_id() }}.html){% if not loop.last %}, {% endif %}
 {% endfor %}
 
@@ -437,9 +437,10 @@ class Zettelkasten(object):
         :returns Note with register
 
         """
+        exit_notes = [n.get_id() for b, n in self._exit_notes()]
         env = Environment(trim_blocks=True).from_string(NOTE_REGISTER)
         return Note(0, 'Register', env.render(notes=self._register(),
-                    stats=self.get_stats(),
+                    stats=self.get_stats(), exit_notes=exit_notes,
                     date=datetime.utcnow().isoformat()),
                     display_id=False)
 
