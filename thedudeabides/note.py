@@ -4,6 +4,7 @@ from jinja2 import Environment
 
 from markdown_it import MarkdownIt
 from markdown_it.token import nest_tokens
+from markdown_it.extensions.footnote import footnote_plugin
 from frontmatter import load, loads, dumps
 
 import logging
@@ -79,7 +80,7 @@ class Note(object):
             return self.renderToken(tokens, idx, options, env)
 
         # Parse the contents of the note
-        self.md = MarkdownIt('default')
+        self.md = MarkdownIt('default').use(footnote_plugin)
         self.md.add_render_rule('link_open', render_link_open)
         self.T = self.md.parse(self.get_body())
 

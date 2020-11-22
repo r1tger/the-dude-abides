@@ -440,7 +440,8 @@ class Zettelkasten(object):
         env = Environment(trim_blocks=True).from_string(NOTE_REGISTER)
         return Note(0, 'Register', env.render(notes=self._register(),
                     stats=self.get_stats(),
-                    date=datetime.utcnow().isoformat()), display_id=False)
+                    date=datetime.utcnow().isoformat()),
+                    display_id=False)
 
     def _train_of_thought(self, s):
         """Find a "train of thought", starting at the note with the provided
