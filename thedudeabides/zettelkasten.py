@@ -164,10 +164,13 @@ class Zettelkasten(object):
         :returns: tuple of tuple (ref, Note), dictionary of paths
 
         """
-        if s in [v for _, v in self._exit_notes()]:
+        exit_notes = [v for _, v in self._exit_notes()]
+        if s in exit_notes:
             return []
-        notes_to = []
         G = self.get_graph()
+        # Add direct predecessors, if a predecessor is not an exit Note
+        notes_to = [(G.out_degree(n), n, []) for n in G.predecessors(s)
+                    if n not in exit_notes]
         for n in t:
             # If not path exists between the source and target, skip
             if not nx.has_path(G, n, s):
