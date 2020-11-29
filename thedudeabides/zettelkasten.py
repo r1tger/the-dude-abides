@@ -2,10 +2,10 @@
 
 from .note import Note
 
-from graph_tools import Graph
+import networkx as nx
 from os import walk
 from os.path import join, splitext, isdir
-from pprint import pprint
+# from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
 from itertools import groupby
@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 ATTR_NOTE = 'note'
 EXT_NOTE = 'md'
 
+NOTE_ID = 'ident'
 
 NOTE_NEW = """---
 title: "{{ title }}"
@@ -31,13 +32,13 @@ NOTE_REFS = """{{ contents }}
 {% if notes_to|length > 0 %}
 ## Ref.
 
-{% for b, note in notes_to %}
+{% for b, note, paths in notes_to %}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
-{% if (ident, note.get_id()) in path %}
-[{% for p in path[(ident, note.get_id())] %}
-[{{ loop.index }}](?note={{ p|join('&amp;note=') }}){% if not loop.last %}, {% endif %}
-{% endfor %}]
+{% for path in paths %}
+{% if path|length > 2 %}
+ [[{{ loop.index }}](?note={{ path|join('&amp;note=') }})]
 {% endif %}
+{% endfor %}
 {% endfor %}
 
 {% endif %}
@@ -60,11 +61,6 @@ date: "{{ date }}"
 {{ loop.index }}. |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% endfor %}
 
-# Inbox
-
-{% for b, note in inbox_notes %}
-* |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
-{% endfor %}
 """
 
 NOTE_COLLECTED = """{% for note in notes %}
@@ -97,11 +93,13 @@ date: "{{ date }}"
 
 ## {{ k }}
 
-{% for note, ref in v %}
-* {%if note.get_id() in exit_notes %}Ω {% endif %}[{{ note.get_title() }}]({{ note.get_id() }}) {%+ for n in ref %}
+{% for _, note, ref in v %}
+* {%if note.get_id() in exit_notes %}Ω {% endif %}
+[{{ note.get_title() }}]({{ note.get_id() }})
+{% for n in ref %}
 [{{ n.get_id() }}]({{ n.get_id() }}.html){% if not loop.last %}, {% endif %}
-{% endfor %}
 
+{% endfor %}
 {% endfor %}
 {% endfor %}
 
@@ -125,7 +123,7 @@ class Zettelkasten(object):
         if not isdir(zettelkasten):
             raise ValueError('Invalid Zettelkasten directory provided')
         self.zettelkasten = zettelkasten
-        self.g = None
+        self.G = None
 
     def get_note(self, v):
         """Get a single Note instance by id.
@@ -136,8 +134,9 @@ class Zettelkasten(object):
         """
         if not self.exists(v):
             raise ValueError('No Note for ID: "{v}" found'.format(v=v))
+        # Filter by ident attribute
         g = self.get_graph()
-        return g.get_vertex_attribute(v, ATTR_NOTE)
+        return [n for n, d in g.nodes(data=True) if d[NOTE_ID] == v].pop()
 
     def get_notes(self):
         """Get all available Notes from the directory.
@@ -145,6 +144,7 @@ class Zettelkasten(object):
         :returns: generator of tuple (id, Note)
 
         """
+        # Process all Notes in Zettelkasten
         for root, dirs, files in walk(self.zettelkasten):
             for name in sorted(files):
                 try:
@@ -152,42 +152,33 @@ class Zettelkasten(object):
                     v = int(splitext(name)[0])
                 except ValueError:
                     continue
-                yield((v, Note(v, join(root, name))))
+                yield(Note(v, join(root, name)))
 
-    def get_notes_to(self, v, t=None):
+    def get_notes_to(self, s, t):
         """Get all Notes that refer to Note v. If list t is provided, paths are
         resolved between vertex v and each vertex listed in t. The result is
         added to the output.
 
-        :v: ID of Note
-        :t: list of note IDs that must be used as a path target from v
+        :s:
+        :t:
         :returns: tuple of tuple (ref, Note), dictionary of paths
 
         """
-        if not self.exists(v):
-            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
-        # Get Notes for all incoming vertices
-        g = self.get_graph()
-        edges_to = set([i for l in g.edges_to(v) for i in l])
-        # Append target notes if target is reachable from v
-        if t is not None:
-            edges_to |= set([u for u in t if u not in edges_to and
-                             g.is_reachable(u, v)])
-        path = {}
-        # Determine the shortest path for each referring note to v
-        for u in edges_to:
-            shortest_paths = []
-            for p in g.shortest_paths(u, v):
-                if len(p) <= 2:
-                    continue
-                shortest_paths.append(['%2F{}.html'.format(s)
-                                       for s in p[::-1]])
-            if len(shortest_paths) > 0:
-                path[(v, u)] = shortest_paths
-
-        n = [(len(g.edges_to(u)), self.get_note(u)) for u in edges_to if
-             u is not v]
-        return (sorted(n, key=lambda x: x[0], reverse=True), path)
+        if s in [v for _, v in self._exit_notes()]:
+            return []
+        notes_to = []
+        G = self.get_graph()
+        for n in t:
+            # If not path exists between the source and target, skip
+            if not nx.has_path(G, n, s):
+                continue
+            # Add all paths to target notes
+            paths = []
+            for path in nx.all_shortest_paths(G, n, s, weight='weight'):
+                paths.append(['%2F{}.html'.format(p.get_id())
+                              for p in path[::-1]])
+            notes_to.append((G.out_degree(n), n, paths))
+        return sorted(notes_to, key=itemgetter(0), reverse=True)
 
     def get_filename(self, v):
         """Create a filename based on Note ID. """
@@ -199,87 +190,67 @@ class Zettelkasten(object):
         clusters of Notes and to create a visual representation of the
         Zettelkasten.
 
-        The excellent "graph-tools" library is used to create the directed
-        graph.
-
         :returns: Graph containing all Notes in the Zettelkasten
 
         """
         # Cached version available?
-        if self.g is not None:
-            return self.g
+        if self.G is not None:
+            return self.G
 
         # Add all available Notes to the graph
-        self.g = Graph(directed=True)
-
+        self.G = nx.DiGraph()
+        self.G.add_nodes_from([(n, {NOTE_ID: n.get_id()})
+                               for n in self.get_notes()])
         # Get all Notes
-        for v, note in self.get_notes():
-            # Create a new vertex for each Note
-            self.g.add_vertex(v)
-            self.g.set_vertex_attribute(v, ATTR_NOTE, note)
-
-        # Once all Notes have been add, add edges
-        hidden = []
-        for u in self.g.vertices():
-            # Get all outgoing links from this Note
-            note = self.g.get_vertex_attribute(u, ATTR_NOTE)
-            if note.is_hidden():
-                hidden.append(note.get_id())
+        for note in self.G.nodes():
+            # Add edges
             for text, v in note.get_links():
-                if not self.g.has_vertex(v):
-                    log.error('Invalid link {v} in note {u}'.format(u=u, v=v))
+                try:
+                    self.G.add_edge(note, self.get_note(v))
+                except ValueError as e:
+                    log.error('While processing note "{v}": {e}'.format(e=e,
+                              v=note.get_id()))
+        # Update edges to combined in_degree as weight
+        for s, t in self.G.edges():
+            weight = self.G.in_degree(s) + self.G.in_degree(t)
+            self.G.add_edge(s, t, weight=weight)
+        # Delete hidden Notes and associated Notes
+        notes = set()
+        for n in [n for n in self.G.nodes() if n.is_hidden()]:
+            for u in [u for _, u in self._exit_notes()]:
+                if not nx.has_path(self.G, source=u, target=n):
                     continue
-                # Add an edge from this Note to each referenced Note
-                if not self.g.has_edge(u, v):
-                    self.g.add_edge(u, v)
-                    log.debug('Add edge from {u} to {v}'.format(u=u, v=v))
-
-        # Remove the train of thought for any hidden notes
-        for v in hidden:
-            log.info('Delete hidden vertex "{v}"'.format(v=v))
-            self.g.delete_vertices([n.get_id() for n in
-                                    self._train_of_thought(v)])
-
+                notes |= set(self._train_of_thought(u, n))
+        log.info('Deleted notes: "{n}"'.format(n='", "'.join(map(str, notes))))
+        self.G.remove_nodes_from(notes)
         # Return the populated graph
-        return self.g
+        return self.G
 
     def get_stats(self):
         """ Get information about the Zettelkasten. """
-        g = self.get_graph()
+        G = self.get_graph()
         stats = {}
         # Number of notes
-        stats['nr_vertices'] = len(g.vertices())
+        stats['nr_vertices'] = len(G.nodes())
         # Number of links between notes
-        stats['nr_edges'] = len(g.edges())
-        edges = [len(g.edges_at(v)) for v in g.vertices()]
+        stats['nr_edges'] = len(G.edges())
+        edges = [G.degree(n) for n in G.nodes()]
         stats['avg_edges'] = int(mean(edges))
         stats['min_edges'] = int(min(edges))
         stats['max_edges'] = int(max(edges))
         # Average word count
-        wc = [n.get_word_count() for b, n in self._get_notes(g.vertices())]
+        wc = [n.get_word_count() for n in G.nodes()]
         stats['word_count'] = sum(wc)
         stats['avg_word_count'] = int(mean(wc))
         # Entry & exit notes
-        stats['nr_entry'] = len(list(self._entry_notes()))
+        stats['nr_entry'] = len(self._entry_notes())
         stats['nr_entry_perc'] = int((stats['nr_entry'] /
                                       stats['nr_vertices']) * 100)
-        stats['nr_exit'] = len(list(self._exit_notes()))
+        stats['nr_exit'] = len(self._exit_notes())
         stats['nr_exit_perc'] = int((stats['nr_exit'] /
                                      stats['nr_vertices']) * 100)
         # Statistics
         return stats
-
-    def is_entry_note(self, v):
-        """True if the note is an entry note. Note::is_entry() is used to check
-        if a note is an entry note, all other entry notes are added by default.
-
-        """
-        if not self.exists(v):
-            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
-        g = self.get_graph()
-        n = self.get_note(v)
-        return ((len(g.edges_from(v)) == 0) and (len(g.edges_to(v)) != 0) or
-                n.is_entry())
 
     def create_note(self, title='', body=''):
         """Create a new Note using a template. Does not write the note to disk.
@@ -293,16 +264,12 @@ class Zettelkasten(object):
         contents = env.render(title=title, date=datetime.utcnow().isoformat(),
                               body=body)
         # Create Note
-        g = self.get_graph()
-        n = g.vertices()
+        G = self.get_graph()
         # Get largest Note ID, increment by 1
-        v = max(n) + 1 if len(n) > 0 else 1
+        n = max([d[NOTE_ID] for n, d in G.nodes(data=True)])
+        v = (n + 1) if (n > 0) else 1
         # Compose filename
-        note = Note(v, self.get_filename(v), contents)
-        # Add note to graph, so Zettelkasten::exists() works
-        g.add_vertex(v)
-        g.set_vertex_attribute(v, ATTR_NOTE, note)
-        return note
+        return Note(v, self.get_filename(v), contents)
 
     def exists(self, v):
         """Check if a Note with the provided id exists in the graph.
@@ -311,34 +278,33 @@ class Zettelkasten(object):
         :returns: True if Note exists, False if not
 
         """
-        g = self.get_graph()
-        return g.has_vertex(v)
+        G = self.get_graph()
+        return G.has_node(v)
 
     def _top_notes(self):
         """ Get a top 10 of most referred notes. """
-        g = self.get_graph()
-        return self._get_notes(g.vertices())[:10]
+        G = self.get_graph()
+        return self._get_notes(G.nodes())[:10]
 
-    def _get_notes(self, vertices):
+    def _get_notes(self, nodes):
         """ Create a list of notes n for use in templates.
 
         :vertices: list of vertex IDs
 
         """
-        g = self.get_graph()
-        notes = [(len(g.edges_to(u)), self.get_note(u)) for u in vertices]
-        return sorted(notes, key=lambda x: x[0], reverse=True)
+        G = self.get_graph()
+        notes = [(len(list(G.predecessors(n))), n) for n in nodes]
+        return sorted(notes, key=itemgetter(0), reverse=True)
 
     def _exit_notes(self):
-        """ Get a list of exit notes. Exit notes have no incoming edges, which
+        """Get a list of exit notes. Exit notes have no incoming edges, which
         makes them the ending point for a train of thought.
 
         :returns: list of tuple(b, Note)
 
         """
-        g = self.get_graph()
-        return self._get_notes([v for v in g.vertices()
-                                if len(g.edges_to(v)) == 0])
+        G = self.get_graph()
+        return self._get_notes([v for v, d in G.in_degree() if d == 0])
 
     def _entry_notes(self):
         """Get a list of entry notes. Entry notes have no outgoing edges, which
@@ -348,25 +314,8 @@ class Zettelkasten(object):
         :returns: list of tuple(b, Note)
 
         """
-        g = self.get_graph()
-        return self._get_notes([v for v in g.vertices()
-                                if self.is_entry_note(v)])
-
-    def _inbox(self):
-        """Any Notes not part of a path between entry and exit are considered
-        orphaned. These Notes need additional work to become integrated into
-        the Zettelkasten. """
-        g = self.get_graph()
-        orphaned = set(g.vertices())
-        #
-        entry_notes = self._entry_notes()
-        for b, note in entry_notes:
-            for n in self._train_of_thought(note.get_id()):
-                if n.get_id() in orphaned:
-                    orphaned.remove(n.get_id())
-                if n.get_id() in orphaned and n.is_entry():
-                    orphaned.remove(n.get_id())
-        return self._get_notes(orphaned)
+        G = self.get_graph()
+        return self._get_notes([v for v, d in G.out_degree() if d == 0])
 
     def index(self):
         """Create a markdown representation of the index of notes.
@@ -376,28 +325,22 @@ class Zettelkasten(object):
         """
         env = Environment(trim_blocks=True).from_string(NOTE_INDEX)
         return Note(0, contents=env.render(entry_notes=self._entry_notes(),
-                                           inbox_notes=self._inbox(),
                                            top_notes=self._top_notes(),
                                            date=datetime.utcnow().isoformat()),
                     display_id=False)
 
-    def _collect(self, v):
-        """Collect all Notes associated with the provided ID. All edges are
+    def _collect(self, s):
+        """Collect all Notes associated with the provided Note. All edges are
         traversed and the associated Notes are returned.
 
-        :v: id of Note to use as starting point
+        :s: Note to use as starting point
         :returns: generator of Note
 
         """
-        if not self.exists(v):
-            raise ValueError('No Note for ID: "{v}" found'.format(v=v))
-        g = self.get_graph()
-        # Get network of related Notes
-        explored = g.explore(v)
-        log.info('Retrieved notes: {n}'.format(
-                 n=', '.join(map(str, explored))))
-        for v in explored:
-            yield(g.get_vertex_attribute(v, ATTR_NOTE))
+        if not self.exists(s):
+            raise ValueError('No Note "{v}" found'.format(v=s.get_id()))
+        for note in nx.bfs_tree(self.get_graph(), source=s).nodes():
+            yield(note)
 
     def collect(self, v):
         """Collect all Notes associated with the provided ID.
@@ -407,8 +350,9 @@ class Zettelkasten(object):
 
         """
         env = Environment(trim_blocks=True).from_string(NOTE_COLLECTED)
-        return self.create_note(self.get_note(v).get_title(),
-                                env.render(notes=self._collect(v)))
+        note = self.get_note(v)
+        return self.create_note(note.get_title(),
+                                env.render(notes=self._collect(note)))
 
     def _register(self):
         """Collect all notes and group by first leter of note title.
@@ -416,19 +360,13 @@ class Zettelkasten(object):
         :returns: Dictionary of notes sorted by first letter
 
         """
-        g = self.get_graph()
+        G = self.get_graph()
         # Get all notes and sort by first letter
-        notes = []
-        for v in g.vertices():
-            ref = [self.get_note(u) for u in [u[0] for u in
-                   sorted(g.edges_to(v), key=itemgetter(0))]]
-            notes.append((self.get_note(v).get_title()[0].upper(),
-                         (self.get_note(v), ref)))
-        notes = sorted(notes, key=itemgetter(0))
-        # Group all notes by first letter
+        notes = sorted([(n.get_title()[0].upper(), n, list(G.predecessors(n)))
+                        for n in G.nodes()], key=itemgetter(0))
+        # Group all notes by first letter, yield each group
         for k, group in groupby(notes, key=itemgetter(0)):
-            yield((k, [x[1] for x in sorted(group,
-                  key=lambda n: n[1][0].get_title().lower())]))
+            yield((k, sorted(group, key=lambda n: n[1].get_title().upper())))
 
     def register(self):
         """Create a registry of all notes, sorted by first letter of note
@@ -437,52 +375,44 @@ class Zettelkasten(object):
         :returns Note with register
 
         """
-        exit_notes = [n.get_id() for b, n in self._exit_notes()]
+        exit_notes = [n for b, n in self._exit_notes()]
         env = Environment(trim_blocks=True).from_string(NOTE_REGISTER)
         return Note(0, 'Register', env.render(notes=self._register(),
                     stats=self.get_stats(), exit_notes=exit_notes,
                     date=datetime.utcnow().isoformat()),
                     display_id=False)
 
-    def _train_of_thought(self, s):
+    def _train_of_thought(self, s, t):
         """Find a "train of thought", starting at the note with the provided
-        id.  Finds the shortest path to a leaf and returns the Notes, ordered
+        id. Finds the shortest path to a leaf and returns the Notes, ordered
         by distance from the starting Note.
 
-        :v: id of Note to use as starting point
+        :s: Note to use as starting point
+        :t: Note to use as endpoint
         :returns: generator of Note
 
         """
         if not self.exists(s):
             raise ValueError('No Note for ID: "{v}" found'.format(v=s))
+        G = self.get_graph()
+        if not nx.has_path(G, source=s, target=t):
+            raise ValueError('No path between "{s}" and "{t}"'.format(
+                             s=s.get_id(), t=t.get_id()))
+        return nx.shortest_path(G, source=s, target=t, weight='weight')
 
-        explored = []
-        need_visit = set()
-        need_visit.add(s)
-        g = self.get_graph()
-        while need_visit:
-            u = need_visit.pop()
-            explored.append(u)
-            for v in [i for l in g.edges_to(u) for i in l]:
-                if v not in explored:
-                    log.debug('Processing "{v}" in context of "{u}"'.format(
-                              v=v, u=u))
-                    need_visit.add(v)
-        log.info('Retrieved notes: {n}'.format(
-                 n=', '.join(map(str, explored))))
-        for u in explored:
-            yield(self.get_note(u))
-
-    def train_of_thought(self, v):
+    def train_of_thought(self, s, t):
         """Find a "train of thought".
 
-        :v: id of Note to use as starting point
+        :s: id of Note to use as starting point
+        :t: id of Note to use as endpoint
         :returns: Note for all collected notes
 
         """
         env = Environment(trim_blocks=True).from_string(NOTE_COLLECTED)
-        return self.create_note(self.get_note(v).get_title(),
-                                env.render(notes=self._train_of_thought(v)))
+        source, target = self.get_note(s), self.get_note(t)
+        return self.create_note(source.get_title(),
+                                env.render(notes=self._train_of_thought(source,
+                                           target)[::-1]))
 
     def render(self):
         """Get all Notes in the Zettelkasten, including a list of referring
@@ -491,17 +421,14 @@ class Zettelkasten(object):
         :output: output directory, must exist
 
         """
-        g = self.get_graph()
-        exit_notes = [n.get_id() for b, n in self._exit_notes()]
-        log.info('Exit notes: {n}'.format(n=', '.join(map(str, exit_notes))))
+        G = self.get_graph()
         # Write all Notes to disk
-        for n in [self.get_note(v) for v in g.vertices()]:
-            notes_to, path = self.get_notes_to(n.get_id(), exit_notes)
+        for n in G.nodes():
+            notes_to = self.get_notes_to(n, [u for b, u in self._exit_notes()])
             # Render HTML template as a new Note
             env = Environment(trim_blocks=True).from_string(NOTE_REFS)
             note = Note(n.get_id(), contents=env.render(
                         ident=n.get_id(),
                         contents=n.get_contents(),
-                        notes_to=notes_to,
-                        path=path))
+                        notes_to=notes_to))
             yield(note)

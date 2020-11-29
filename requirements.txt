@@ -3,3 +3,4 @@ graph-tools
 jinja2
 markdown-it-py
 python-frontmatter
+networkx

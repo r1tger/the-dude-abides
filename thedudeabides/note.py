@@ -104,6 +104,10 @@ class Note(object):
         """
         return self.get_title()
 
+    def __hash__(self):
+        """ """
+        return self.ident
+
     def get_contents(self):
         """Get the contents of the note. Includes header (front matter) and
         body.

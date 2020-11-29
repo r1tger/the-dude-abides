@@ -61,7 +61,6 @@ def test_create_note(zettelkasten):
     note = zettelkasten.create_note('Test note')
     assert(isinstance(note, Note))
     assert(note.get_id() == 4)
-    assert(zettelkasten.exists(4))
 
 
 def test_exists(zettelkasten):
@@ -79,4 +78,14 @@ def test_index(zettelkasten):
 
 def test_train_of_thought(zettelkasten):
     """ """
-    zettelkasten.train_of_thought(1)
+    zettelkasten.train_of_thought(3, 1)
+
+
+def test_render(zettelkasten):
+    """ """
+    zettelkasten.render()
+
+
+def test_register(zettelkasten):
+    """ """
+    zettelkasten.register()

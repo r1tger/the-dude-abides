@@ -56,13 +56,17 @@ def main(ctx, zettelkasten, debug):
 
 
 @main.command()
-@argument('v', type=INT)
+@argument('s', type=INT)
+@argument('t', type=INT)
 @pass_zk
-def choo_choo(zk, v):
+def choo_choo(zk, s, t):
     """Collect train of thought by ID.
     """
-    log.info('Collecting train of thought for "{v}"'.format(v=v))
-    edit_note(zk.train_of_thought(v))
+    try:
+        log.info('Collecting train of thought "{s}" to "{t}"'.format(s=s, t=t))
+        edit_note(zk.train_of_thought(s, t))
+    except ValueError as e:
+        log.error(e)
 
 
 @main.command()
@@ -71,8 +75,11 @@ def choo_choo(zk, v):
 def collect(zk, v):
     """Collect associated notes by ID.
     """
-    log.info('Collecting Notes for "{v}"'.format(v=v))
-    edit_note(zk.collect(v))
+    try:
+        log.info('Collecting Notes for "{v}"'.format(v=v))
+        edit_note(zk.collect(v))
+    except ValueError as e:
+        log.error(e)
 
 
 @main.command()
@@ -129,6 +136,7 @@ def render(zk, output):
     # Write the register to disk
     with open(join(output, 'register.html'), 'w') as f:
         f.write(zk.register().render())
+    log.info('Completed rendering of notes')
 
 
 if __name__ == "__main__":

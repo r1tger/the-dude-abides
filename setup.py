@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='thedudeabides',
-    version='0.4.0',
+    version='0.5.0',
     description='The dude abides',
     url='https://github.com/r1tger/the-dude-abides',
     author='Ritger Teunissen',
@@ -10,9 +10,9 @@ setup(
     packages=['thedudeabides'],
     install_requires=[
         'click',
-        'graph-tools',
         'jinja2',
         'markdown-it-py',
+        'networkx',
         'python-frontmatter'
     ],
     entry_points={'console_scripts': [
