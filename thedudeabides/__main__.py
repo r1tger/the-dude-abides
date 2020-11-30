@@ -74,6 +74,9 @@ def choo_choo(zk, s, t):
 @pass_zk
 def collect(zk, v):
     """Collect associated notes by ID.
+
+    The provided ID is treated as the endpoint with all notes retrieved up
+    until all starting points.
     """
     try:
         log.info('Collecting Notes for "{v}"'.format(v=v))

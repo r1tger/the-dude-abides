@@ -5,7 +5,7 @@ from .note import Note
 import networkx as nx
 from os import walk
 from os.path import join, splitext, isdir
-# from pprint import pprint
+from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
 from itertools import groupby
@@ -344,8 +344,10 @@ class Zettelkasten(object):
         """
         if not self.exists(s):
             raise ValueError('No Note "{v}" found'.format(v=s.get_id()))
-        for note in nx.bfs_tree(self.get_graph(), source=s).nodes():
-            yield(note)
+        # Retrieve notes breadth first
+        notes = [s] + [n for n, _ in nx.bfs_predecessors(self.get_graph(),
+                       source=s)]
+        return notes[::-1]
 
     def collect(self, v):
         """Collect all Notes associated with the provided ID.
