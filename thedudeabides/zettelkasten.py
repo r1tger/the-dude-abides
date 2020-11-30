@@ -36,13 +36,15 @@ NOTE_REFS = """{{ contents }}
 * |{{ '%02d' % b }}| [{{ note }}]({{ note.get_id() }})
 {% for path in paths %}
 {% if path|length > 2 %}
- [[{{ loop.index }}](?note={{ path|join('&amp;note=') }})]
+[[{{ loop.index }}](?note={{ path|join('&amp;note=') }})]{% if not loop.last %}, {% endif %}
+
 {% endif %}
 {% endfor %}
 {% endfor %}
 
 {% endif %}
 """ # noqa
+
 
 NOTE_INDEX = """---
 title: "Index"
