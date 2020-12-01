@@ -70,7 +70,7 @@ def choo_choo(zk, s, t):
 
 
 @main.command()
-@argument('v', type=INT)
+@argument('v', type=INT, nargs=-1)
 @pass_zk
 def collect(zk, v):
     """Collect associated notes by ID.
@@ -79,7 +79,7 @@ def collect(zk, v):
     until all starting points.
     """
     try:
-        log.info('Collecting Notes for "{v}"'.format(v=v))
+        log.info('Collecting Notes "{v}"'.format(v=', '.join(map(str, v))))
         edit_note(zk.collect(v))
     except ValueError as e:
         log.error(e)

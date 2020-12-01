@@ -338,12 +338,19 @@ class Zettelkasten(object):
         """Collect all Notes associated with the provided Note. All edges are
         traversed and the associated Notes are returned.
 
-        :s: Note to use as starting point
+        :s: list of Notes to use as starting point
         :returns: generator of Note
 
         """
-        if not self.exists(s):
-            raise ValueError('No Note "{v}" found'.format(v=s.get_id()))
+        # if not self.exists(s):
+        #     raise ValueError('No Note "{v}" found'.format(v=s.get_id()))
+
+        notes = set(s)
+        for note in s:
+            notes |= set([n for n, _ in nx.bfs_predecessors(self.get_graph(),
+                          source=note)])
+        return notes
+
         # Retrieve notes breadth first
         notes = [s] + [n for n, _ in nx.bfs_predecessors(self.get_graph(),
                        source=s)]
@@ -352,14 +359,14 @@ class Zettelkasten(object):
     def collect(self, v):
         """Collect all Notes associated with the provided ID.
 
-        :v: id of Note to use as starting point
+        :v: tuple of Notes to use as starting point
         :returns: Note for all collected notes
 
         """
         env = Environment(trim_blocks=True).from_string(NOTE_COLLECTED)
-        note = self.get_note(v)
-        return self.create_note(note.get_title(),
-                                env.render(notes=self._collect(note)))
+        notes = [self.get_note(u) for u in v]
+        return self.create_note(notes[0].get_title(),
+                                env.render(notes=self._collect(notes)))
 
     def _register(self):
         """Collect all notes and group by first leter of note title.
