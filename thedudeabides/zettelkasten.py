@@ -345,6 +345,8 @@ class Zettelkasten(object):
         for note in s:
             notes |= set([n for n, _ in nx.bfs_predecessors(self.get_graph(),
                           source=note)])
+        log.info('Collected notes: "{n}"'.format(n='", "'.join(map(str,
+                 notes))))
         return notes
 
     def collect(self, v):
