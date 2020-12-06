@@ -5,7 +5,7 @@ from .note import Note
 import networkx as nx
 from os import walk
 from os.path import join, splitext, isdir
-from pprint import pprint
+# from pprint import pprint
 from datetime import datetime
 from jinja2 import Environment
 from itertools import groupby
@@ -15,7 +15,6 @@ from statistics import mean
 import logging
 log = logging.getLogger(__name__)
 
-ATTR_NOTE = 'note'
 EXT_NOTE = 'md'
 
 NOTE_ID = 'ident'
@@ -182,7 +181,7 @@ class Zettelkasten(object):
             for path in nx.all_shortest_paths(G, n, s, weight='weight'):
                 paths.append(['%2F{}.html'.format(p.get_id())
                               for p in path[::-1]])
-            notes_to.append((G.out_degree(n), n, paths))
+            notes_to.append((G.in_degree(n), n, paths))
         return sorted(notes_to, key=itemgetter(0), reverse=True)
 
     def get_filename(self, v):
@@ -342,19 +341,11 @@ class Zettelkasten(object):
         :returns: generator of Note
 
         """
-        # if not self.exists(s):
-        #     raise ValueError('No Note "{v}" found'.format(v=s.get_id()))
-
         notes = set(s)
         for note in s:
             notes |= set([n for n, _ in nx.bfs_predecessors(self.get_graph(),
                           source=note)])
         return notes
-
-        # Retrieve notes breadth first
-        notes = [s] + [n for n, _ in nx.bfs_predecessors(self.get_graph(),
-                       source=s)]
-        return notes[::-1]
 
     def collect(self, v):
         """Collect all Notes associated with the provided ID.
@@ -436,9 +427,10 @@ class Zettelkasten(object):
 
         """
         G = self.get_graph()
+        exit_notes = [u for b, u in self._exit_notes()]
         # Write all Notes to disk
         for n in G.nodes():
-            notes_to = self.get_notes_to(n, [u for b, u in self._exit_notes()])
+            notes_to = self.get_notes_to(n, exit_notes)
             # Render HTML template as a new Note
             env = Environment(trim_blocks=True).from_string(NOTE_REFS)
             note = Note(n.get_id(), contents=env.render(
