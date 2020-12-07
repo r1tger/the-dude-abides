@@ -95,7 +95,8 @@ date: "{{ date }}"
 ## {{ k }}
 
 {% for _, note, ref in v %}
-* {%if note.get_id() in exit_notes %}Ω {% endif %}
+* {%if note.get_id() in entry_notes %}Α {% endif %}
+{%if note.get_id() in exit_notes %}Ω {% endif %}
 [{{ note.get_title() }}]({{ note.get_id() }})
 {% for n in ref %}
 [{{ n.get_id() }}]({{ n.get_id() }}.html){% if not loop.last %}, {% endif %}
@@ -383,9 +384,11 @@ class Zettelkasten(object):
 
         """
         exit_notes = [n for b, n in self._exit_notes()]
+        entry_notes = [n for b, n in self._entry_notes()]
         env = Environment(trim_blocks=True).from_string(NOTE_REGISTER)
         return Note(0, 'Register', env.render(notes=self._register(),
                     stats=self.get_stats(), exit_notes=exit_notes,
+                    entry_notes=entry_notes,
                     date=datetime.utcnow().isoformat()),
                     display_id=False)
 
