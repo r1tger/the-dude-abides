@@ -57,14 +57,13 @@ def main(ctx, zettelkasten, debug):
 
 @main.command()
 @argument('s', type=INT)
-@argument('t', type=INT)
 @pass_zk
-def choo_choo(zk, s, t):
+def choo_choo(zk, s):
     """Collect train of thought by ID.
     """
     try:
-        log.info('Collecting train of thought "{s}" to "{t}"'.format(s=s, t=t))
-        edit_note(zk.train_of_thought(s, t))
+        log.info('Collecting train of thought from "{s}"'.format(s=s))
+        edit_note(zk.train_of_thought(s))
     except ValueError as e:
         log.error(e)
 

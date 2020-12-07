@@ -94,8 +94,8 @@ date: "{{ date }}"
 
 ## {{ k }}
 
-{% for _, note, ref in v %}
-* {%if note.get_id() in entry_notes %}Α {% endif %}
+{% for _, b, note, ref in v %}
+* |{{ '%02d' % b }}| {%if note.get_id() in entry_notes %}Α {% endif %}
 {%if note.get_id() in exit_notes %}Ω {% endif %}
 [{{ note.get_title() }}]({{ note.get_id() }})
 {% for n in ref %}
@@ -180,6 +180,7 @@ class Zettelkasten(object):
             # Add all paths to target notes
             paths = []
             for path in nx.all_shortest_paths(G, n, s, weight='weight'):
+                # TODO: don't generate html filename here, use template
                 paths.append(['%2F{}.html'.format(p.get_id())
                               for p in path[::-1]])
             notes_to.append((G.in_degree(n), n, paths))
@@ -222,10 +223,7 @@ class Zettelkasten(object):
         # Delete hidden Notes and associated Notes
         notes = set()
         for n in [n for n in self.G.nodes() if n.is_hidden()]:
-            for u in [u for _, u in self._exit_notes()]:
-                if not nx.has_path(self.G, source=u, target=n):
-                    continue
-                notes |= set(self._train_of_thought(u, n))
+            notes |= set(self._train_of_thought(n))
         log.info('Deleted notes: "{n}"'.format(n='", "'.join(map(str, notes))))
         self.G.remove_nodes_from(notes)
         # Return the populated graph
@@ -298,7 +296,7 @@ class Zettelkasten(object):
 
         """
         G = self.get_graph()
-        notes = [(len(list(G.predecessors(n))), n) for n in nodes]
+        notes = [(G.in_degree(n), n) for n in nodes]
         return sorted(notes, key=itemgetter(0), reverse=True)
 
     def _exit_notes(self):
@@ -346,8 +344,7 @@ class Zettelkasten(object):
         for note in s:
             notes |= set([n for n, _ in nx.bfs_predecessors(self.get_graph(),
                           source=note)])
-        log.info('Collected notes: "{n}"'.format(n='", "'.join(map(str,
-                 notes))))
+        log.info('Found notes: "{n}"'.format(n='", "'.join(map(str, notes))))
         return notes
 
     def collect(self, v):
@@ -370,11 +367,12 @@ class Zettelkasten(object):
         """
         G = self.get_graph()
         # Get all notes and sort by first letter
-        notes = sorted([(n.get_title()[0].upper(), n, list(G.predecessors(n)))
-                        for n in G.nodes()], key=itemgetter(0))
+        notes = sorted([(n.get_title()[0].upper(), G.in_degree(n), n,
+                        list(G.predecessors(n))) for n in G.nodes()],
+                       key=itemgetter(0))
         # Group all notes by first letter, yield each group
         for k, group in groupby(notes, key=itemgetter(0)):
-            yield((k, sorted(group, key=lambda n: n[1].get_title().upper())))
+            yield((k, sorted(group, key=lambda x: x[2].get_title().upper())))
 
     def register(self):
         """Create a registry of all notes, sorted by first letter of note
@@ -392,37 +390,42 @@ class Zettelkasten(object):
                     date=datetime.utcnow().isoformat()),
                     display_id=False)
 
-    def _train_of_thought(self, s, t):
+    def _train_of_thought(self, s):
         """Find a "train of thought", starting at the note with the provided
-        id. Finds the shortest path to a leaf and returns the Notes, ordered
-        by distance from the starting Note.
+        id. Finds all notes from the starting point to any endpoints, by
+        following backlinks.
 
         :s: Note to use as starting point
-        :t: Note to use as endpoint
         :returns: generator of Note
 
         """
-        if not self.exists(s):
-            raise ValueError('No Note for ID: "{v}" found'.format(v=s))
+        explored = []
+        need_visit = set()
+        need_visit.add(s)
         G = self.get_graph()
-        if not nx.has_path(G, source=s, target=t):
-            raise ValueError('No path between "{s}" and "{t}"'.format(
-                             s=s.get_id(), t=t.get_id()))
-        return nx.shortest_path(G, source=s, target=t, weight='weight')
+        while need_visit:
+            u = need_visit.pop()
+            explored.append(u)
+            for v in G.predecessors(u):
+                if v not in explored:
+                    log.debug('Processing "{v}" in context of "{u}"'.format(
+                              v=v, u=u))
+                    need_visit.add(v)
+        for u in explored:
+            yield(u)
 
-    def train_of_thought(self, s, t):
+    def train_of_thought(self, s):
         """Find a "train of thought".
 
         :s: id of Note to use as starting point
-        :t: id of Note to use as endpoint
         :returns: Note for all collected notes
 
         """
         env = Environment(trim_blocks=True).from_string(NOTE_COLLECTED)
-        source, target = self.get_note(s), self.get_note(t)
-        return self.create_note(source.get_title(),
-                                env.render(notes=self._train_of_thought(source,
-                                           target)[::-1]))
+        source = self.get_note(s)
+        notes = list(self._train_of_thought(source))
+        log.info('Found notes: {n}'.format(n=', '.join(map(str, notes))))
+        return self.create_note(source.get_title(), env.render(notes=notes))
 
     def render(self):
         """Get all Notes in the Zettelkasten, including a list of referring
