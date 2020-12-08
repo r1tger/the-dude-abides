@@ -65,9 +65,9 @@ date: "{{ date }}"
 """
 
 NOTE_COLLECTED = """{% for note in notes %}
-# {{ note.get_title() }} ({{ note.get_id() }})
+## {{ note.get_id() }}. {{ note.get_title() }}
 
-{{ note.get_body() }}
+{{ note.get_body() | replace('# ', '## ') }}
 
 {% endfor %}
 
