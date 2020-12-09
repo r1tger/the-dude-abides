@@ -56,30 +56,30 @@ def main(ctx, zettelkasten, debug):
 
 
 @main.command()
-@argument('s', type=INT)
+@argument('v', type=INT)
 @pass_zk
-def choo_choo(zk, s):
+def predecessors(zk, v):
     """Collect train of thought by ID.
     """
     try:
-        log.info('Collecting train of thought from "{s}"'.format(s=s))
-        edit_note(zk.train_of_thought(s))
+        log.info('Collecting note "{v}"'.format(v=v))
+        edit_note(zk.explore(v, use_successors=False))
     except ValueError as e:
         log.error(e)
 
 
 @main.command()
-@argument('v', type=INT, nargs=-1)
+@argument('v', type=INT)
 @pass_zk
-def collect(zk, v):
+def successors(zk, v):
     """Collect associated notes by ID.
 
     The provided ID is treated as the endpoint with all notes retrieved up
     until all starting points.
     """
     try:
-        log.info('Collecting Notes "{v}"'.format(v=', '.join(map(str, v))))
-        edit_note(zk.collect(v))
+        log.info('Collecting note "{v}"'.format(v=v))
+        edit_note(zk.explore(v, use_successors=True))
     except ValueError as e:
         log.error(e)
 

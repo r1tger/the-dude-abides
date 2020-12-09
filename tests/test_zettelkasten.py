@@ -51,9 +51,9 @@ def zettelkasten(tmpdir):
     return Zettelkasten(directory)
 
 
-def test_collect(zettelkasten):
+def test_successors(zettelkasten):
     """ """
-    zettelkasten.collect(1)
+    zettelkasten.explore(1, use_successors=True)
 
 
 def test_create_note(zettelkasten):
@@ -76,9 +76,9 @@ def test_index(zettelkasten):
     zettelkasten.index()
 
 
-def test_train_of_thought(zettelkasten):
+def test_predecessors(zettelkasten):
     """ """
-    zettelkasten.train_of_thought(3, 1)
+    zettelkasten.explore(3, use_successors=False)
 
 
 def test_render(zettelkasten):
