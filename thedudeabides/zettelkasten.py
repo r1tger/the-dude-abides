@@ -7,7 +7,6 @@ from os import walk
 from os.path import join, splitext, isdir
 # from pprint import pprint
 from datetime import datetime
-from jinja2 import Environment
 from itertools import groupby
 from operator import itemgetter
 from statistics import mean
@@ -16,94 +15,7 @@ import logging
 log = logging.getLogger(__name__)
 
 EXT_NOTE = 'md'
-
 NOTE_ID = 'ident'
-
-NOTE_NEW = """---
-title: "{{ title }}"
-date: "{{ date }}"
----
-
-{{ body }}
-"""
-
-NOTE_REFS = """{{ contents }}
-{% if notes_to|length > 0 %}
-## Ref.
-
-{% for b, note, paths in notes_to %}
-* {{ note|format_note(b, exit_notes) }}
-{% for path in paths %}
-{% if path|length > 2 %}
-[[{{ loop.index }}](?note={{ path|join('&amp;note=') }})]{% if not loop.last %}, {% endif %}
-
-{% endif %}
-{% endfor %}
-{% endfor %}
-
-{% endif %}
-""" # noqa
-
-
-NOTE_INDEX = """---
-title: "Index"
-date: "{{ date }}"
----
-
-* |xx| [Register](register.html)
----
-{% for b, note in top_notes %}
-* {{ note|format_note(b, exit_notes) }}
-{% endfor %}
-
-# Ingang
-
-{% for b, note in entry_notes %}
-{{ loop.index }}. {{ note|format_note(b)}}
-{% endfor %}
-
-"""
-
-NOTE_COLLECTED = """{% for note in notes %}
-## {{ note.get_id() }}. {{ note.get_title() }}
-
-{{ note.get_body() | replace('# ', '## ') }}
-
-{% endfor %}
-
-"""
-
-NOTE_REGISTER = """---
-title: "Register"
-date: "{{ date }}"
----
-
-{% if stats %}
-|Notities           |Totaal                 |Gemiddeld                 |
-|:------------------|----------------------:|-------------------------:|
-|Notities           |{{ stats.nr_vertices }}|n.v.t.                    |
-|Relaties           |{{ stats.nr_edges }}   |{{ stats.avg_edges }}     |
-|Minst verbonden    |{{ stats.min_edges }}  |n.v.t.                    |
-|Meest verbonden    |{{ stats.max_edges }}  |n.v.t.                    |
-|Aantal woorden     |{{ stats.word_count }} |{{ stats.avg_word_count }}|
-|Ingangnotities     |{{ stats.nr_entry }}   |{{ stats.nr_entry_perc }}%|
-|Uitgangnotities (Ω)|{{ stats.nr_exit }}    |{{ stats.nr_exit_perc }}% |
-{% endif %}
-
-{% for k, v in notes %}
-
-## {{ k }}
-
-{% for _, b, note, ref in v %}
-* {{ note|format_note(b, exit_notes) }}
-{% for n in ref %}
-[{{ n.get_id() }}]({{ n.get_id() }}.html){% if not loop.last %}, {% endif %}
-
-{% endfor %}
-{% endfor %}
-{% endfor %}
-
-""" # noqa
 
 
 class Zettelkasten(object):
@@ -262,11 +174,11 @@ class Zettelkasten(object):
         """
         G = self.get_graph()
         # Get largest Note ID, increment by 1
-        n = max([d[NOTE_ID] for n, d in G.nodes(data=True)])
-        v = (n + 1) if (n > 0) else 1
+        notes = [d[NOTE_ID] for n, d in G.nodes(data=True)]
+        v = max(notes) + 1 if len(notes) > 0 else 1
         # Compose Note
-        contents = self._env(NOTE_NEW, title=title, body=body,
-                             date=datetime.utcnow().isoformat())
+        contents = Note.render('new.md.tpl', title=title, body=body,
+                               date=datetime.utcnow().isoformat())
         return Note(v, self.get_filename(v), contents)
 
     def exists(self, v):
@@ -322,10 +234,10 @@ class Zettelkasten(object):
 
         """
         exit_notes = [u for b, u in self._exit_notes()]
-        contents = self._env(NOTE_INDEX, top_notes=self._top_notes(),
-                             entry_notes=self._entry_notes(),
-                             exit_notes=exit_notes,
-                             date=datetime.utcnow().isoformat())
+        contents = Note.render('index.md.tpl', top_notes=self._top_notes(),
+                               entry_notes=self._entry_notes(),
+                               exit_notes=exit_notes,
+                               date=datetime.utcnow().isoformat())
         return Note(0, contents=contents, display_id=False)
 
     def _register(self):
@@ -352,10 +264,10 @@ class Zettelkasten(object):
         """
         exit_notes = [n for b, n in self._exit_notes()]
         entry_notes = [n for b, n in self._entry_notes()]
-        contents = self._env(NOTE_REGISTER, notes=self._register(),
-                             stats=self.get_stats(), exit_notes=exit_notes,
-                             entry_notes=entry_notes,
-                             date=datetime.utcnow().isoformat())
+        contents = Note.render('register.md.tpl', notes=self._register(),
+                               stats=self.get_stats(), exit_notes=exit_notes,
+                               entry_notes=entry_notes,
+                               date=datetime.utcnow().isoformat())
         return Note(0, 'Register', contents=contents, display_id=False)
 
     def _explore(self, s, nodes):
@@ -392,23 +304,8 @@ class Zettelkasten(object):
         s = self.get_note(s)
         nodes = G.successors if use_successors else G.predecessors
         # Compile all notes into a single Note
-        return self.create_note(s.get_title(), self._env(NOTE_COLLECTED,
+        return self.create_note(s.get_title(), Note.render('collected.md.tpl',
                                 notes=list(self._explore(s, nodes))))
-
-    def _env(self, template, **kwargs):
-        """ """
-        env = Environment(trim_blocks=True)
-
-        # Add custom filters
-        def format_note(n, b, exit_notes=None):
-            flag = ''
-            if exit_notes is not None and n.get_id() in exit_notes:
-                flag = 'Ω '
-            return f'|{"%02d" % b}| {flag}[{n.get_title()}]({n.get_id()})'
-        env.filters['format_note'] = format_note
-
-        # Render the template
-        return env.from_string(template).render(**kwargs)
 
     def render(self):
         """Get all Notes in the Zettelkasten, including a list of referring
@@ -422,8 +319,8 @@ class Zettelkasten(object):
         # Write all Notes to disk
         for n in G.nodes():
             notes_to = self.get_notes_to(n, exit_notes)
-            # Render HTML template as a new Note
-            note = Note(n.get_id(), contents=self._env(NOTE_REFS,
+            # Render contents with references as a new Note
+            note = Note(n.get_id(), contents=Note.render('note.md.tpl',
                         ident=n.get_id(), contents=n.get_contents(),
                         notes_to=notes_to, exit_notes=exit_notes))
             yield(note)

@@ -131,13 +131,13 @@ def render(zk, output):
         # Write to disk
         filename = join(output, '{v}.html'.format(v=note.get_id()))
         with open(filename, 'w') as f:
-            f.write(note.render())
+            f.write(note.to_html())
     # Write the index to disk
     with open(join(output, 'index.html'), 'w') as f:
-        f.write(zk.index().render())
+        f.write(zk.index().to_html())
     # Write the register to disk
     with open(join(output, 'register.html'), 'w') as f:
-        f.write(zk.register().render())
+        f.write(zk.register().to_html())
     log.info('Completed rendering of notes')
 
 

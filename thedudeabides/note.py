@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from jinja2 import Environment
+from jinja2 import Environment, PackageLoader
 
 from markdown_it import MarkdownIt
 from markdown_it.token import nest_tokens
@@ -11,45 +11,13 @@ import logging
 log = logging.getLogger(__name__)
 
 
-HTML = """<!DOCTYPE html>
-<html lang="nl">
-    <head>
-        <meta charset="UTF-8"/>
-        <title>{{ title }}</title>
-        <link rel="stylesheet" href="https://unpkg.com/wingcss"/>
-        <link rel="stylesheet" href="main.css"/>
-        <link href="/favicon.ico" rel="shortcut icon"/>
-        <meta name="description" content="{{ title|e }}"/>
-        <!--[if IE]>
-        <script
-            src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
-    </head>
-    <body class="index">
-        <div class="grid-container">
-            <div class="grid">
-                <div class="page" data-level="1">
-                    <div class="content">
-                        <h1>{% if display_id %}{{ ident }}. {% endif %}{{ title|e }}</h1>
-                        {{ content }}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </body>
-
-    <script src="https://unpkg.com/urijs@1"></script>
-    <script src="main.js" type="text/javascript"></script>
-</html>
-""" # noqa
-
-
 class Note(object):
 
     """Encapsulate a Markdown file on disk. Note is usually created by
     Zettelkasten. A Note provides common operations for Notes.
 
     """
+    _env = None
 
     def __init__(self, ident, filename=None, contents=None, display_id=True):
         """Constructor.
@@ -206,14 +174,30 @@ class Note(object):
         except ValueError:
             return False
 
-    def render(self):
-        """Render the note to an HTML file.
+    def to_html(self):
+        """Render the body of the note to an HTML file.
 
         :returns: HTML representation for the Note.
 
         """
-        env = Environment().from_string(HTML)
-        return env.render(title=self.get_title(),
-                          ident=self.get_id(),
-                          display_id=self.display_id,
-                          content=self.md.render(self.get_body()))
+        return Note.render('note.html.tpl', title=self.get_title(),
+                           display_id=self.display_id, ident=self.get_id(),
+                           content=self.md.render(self.get_body()))
+
+    @staticmethod
+    def render(template, template_dir='templates/', **kwargs):
+        """ Render the provided template """
+        if Note._env is None:
+            Note._env = Environment(loader=PackageLoader('thedudeabides',
+                                    template_dir), trim_blocks=True)
+
+            # Add custom filters
+            def format_note(n, b, exit_notes=None):
+                flag = ''
+                if exit_notes is not None and n.get_id() in exit_notes:
+                    flag = 'Ω '
+                return f'|{"%02d" % b}| {flag}[{n.get_title()}]({n.get_id()})'
+            Note._env.filters['format_note'] = format_note
+
+        # Render the template
+        return Note._env.get_template(template).render(**kwargs)
