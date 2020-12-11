@@ -8,6 +8,7 @@ setup(
     author='Ritger Teunissen',
     author_email='github@ritger.nl',
     packages=['thedudeabides'],
+    package_data={'thedudeabides': ['templates/*.tpl']},
     install_requires=[
         'click',
         'jinja2',
