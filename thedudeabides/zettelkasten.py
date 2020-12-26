@@ -225,7 +225,11 @@ class Zettelkasten(object):
 
         """
         G = self.get_graph()
-        return self._get_notes([v for v, d in G.out_degree() if d == 0])
+        # Get all notes without outgoing links
+        notes = set([v for v, d in G.out_degree() if d == 0])
+        # Add any note that is marked as an entry note
+        notes |= set([v for v in G.nodes() if v.is_entry()])
+        return self._get_notes(notes)
 
     def index(self):
         """Create a markdown representation of the index of notes.
