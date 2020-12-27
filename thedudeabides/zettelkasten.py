@@ -225,11 +225,24 @@ class Zettelkasten(object):
 
         """
         G = self.get_graph()
+        n = [(n, G.in_degree(n), G.out_degree(n)) for n in G.nodes()]
         # Get all notes without outgoing links
-        notes = set([v for v, d in G.out_degree() if d == 0])
+        notes = set([note for note, in_degree, out_degree in n
+                     if in_degree != 0 and out_degree == 0])
         # Add any note that is marked as an entry note
         notes |= set([v for v in G.nodes() if v.is_entry()])
         return self._get_notes(notes)
+
+    def _inbox(self):
+        """List of notes that have neither predecessors or successors.
+
+        :returns: list of tuple(b, Note)
+
+        """
+        G = self.get_graph()
+        notes = [(n, G.in_degree(n), G.out_degree(n)) for n in G.nodes()]
+        return self._get_notes([note for note, in_degree, out_degree in notes
+                                if in_degree == 0 and out_degree == 0])
 
     def index(self):
         """Create a markdown representation of the index of notes.
@@ -241,6 +254,7 @@ class Zettelkasten(object):
         contents = Note.render('index.md.tpl', top_notes=self._top_notes(),
                                entry_notes=self._entry_notes(),
                                exit_notes=exit_notes,
+                               inbox=self._inbox(),
                                date=datetime.utcnow().isoformat())
         return Note(0, contents=contents, display_id=False)
 
