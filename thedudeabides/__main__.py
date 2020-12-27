@@ -138,6 +138,9 @@ def render(zk, output):
     # Write the register to disk
     with open(join(output, 'register.html'), 'w') as f:
         f.write(zk.register().to_html())
+    # Write the tags to disk
+    with open(join(output, 'tags.html'), 'w') as f:
+        f.write(zk.tags().to_html())
     log.info('Completed rendering of notes')
 
 

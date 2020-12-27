@@ -5,7 +5,7 @@ from .note import Note
 import networkx as nx
 from os import walk
 from os.path import join, splitext, isdir
-# from pprint import pprint
+from pprint import pprint
 from datetime import datetime
 from itertools import groupby
 from operator import itemgetter
@@ -261,7 +261,7 @@ class Zettelkasten(object):
     def _register(self):
         """Collect all notes and group by first leter of note title.
 
-        :returns: Dictionary of notes sorted by first letter
+        :returns: Tuple of notes sorted by first letter
 
         """
         G = self.get_graph()
@@ -285,6 +285,33 @@ class Zettelkasten(object):
         contents = Note.render('register.md.tpl', notes=self._register(),
                                stats=self.get_stats(), exit_notes=exit_notes,
                                entry_notes=entry_notes,
+                               date=datetime.utcnow().isoformat())
+        return Note(0, 'Register', contents=contents, display_id=False)
+
+    def _tags(self):
+        """Collect all notes and group by tag.
+
+        :returns: Tuple of tag, notes
+
+        """
+        G = self.get_graph()
+        tags = {}
+        for note in G.nodes():
+            # Tag the note for each associated tag
+            for tag in note.get_tags():
+                if tag not in tags:
+                    tags[tag] = []
+                tags[tag].append(note)
+        for k, v in tags.items():
+            yield((k, self._get_notes(v)))
+
+    def tags(self):
+        """Create an overview of all tags, grouping notes by tag.
+
+        :returns: Note with tags
+
+        """
+        contents = Note.render('tags.md.tpl', notes=self._tags(),
                                date=datetime.utcnow().isoformat())
         return Note(0, 'Register', contents=contents, display_id=False)
 

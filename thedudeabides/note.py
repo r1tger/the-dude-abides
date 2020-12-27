@@ -122,6 +122,16 @@ class Note(object):
                              i=self.get_id()))
         return self.contents[tag]
 
+    def get_tags(self):
+        """Get all tags associated with the note.
+
+        :returns: list of tags
+
+        """
+        if 'tags' not in self.contents:
+            return []
+        return self.contents['tags']
+
     def get_title(self):
         """Get the title of the Note. Title is stored as a tag in the header.
 
