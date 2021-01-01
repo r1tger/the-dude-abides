@@ -192,12 +192,15 @@ class Zettelkasten(object):
         return G.has_node(v)
 
     def _top_notes(self):
-        """ Get a top 10 of most referred notes. """
+        """Get a top 10 of most referred notes. Based on PageRank. """
         G = self.get_graph()
-        return self._get_notes(G.nodes())[:10]
+        pr = nx.pagerank(G)
+        notes = [n for n, r in sorted(pr.items(), key=itemgetter(1),
+                 reverse=True)]
+        return self._get_notes(notes[:10])
 
     def _get_notes(self, nodes):
-        """ Create a list of notes n for use in templates.
+        """Create a list of notes n for use in templates.
 
         :vertices: list of vertex IDs
 
