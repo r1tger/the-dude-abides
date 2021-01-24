@@ -81,7 +81,7 @@ class Zettelkasten(object):
             return []
         G = self.get_graph()
         # Add direct predecessors, if a predecessor is not an exit Note
-        notes_to = [(G.out_degree(n), n, []) for n in G.predecessors(s)
+        notes_to = [(G.in_degree(n), n, []) for n in G.predecessors(s)
                     if n not in exit_notes]
         for n in t:
             # If not path exists between the source and target, skip
