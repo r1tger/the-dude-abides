@@ -1,6 +1,6 @@
 {{ contents }}
 {% if notes_to|length > 0 %}
-## Ref.
+## Referenties
 
 {% for b, note, paths in notes_to %}
 * {{ note|format_note(b, exit_notes) }}
