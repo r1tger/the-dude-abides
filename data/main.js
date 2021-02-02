@@ -58,7 +58,7 @@ function displayNote(href, text, level, animate=true) {
             }
             // Add an onclick event listener to the new div.page
             element.addEventListener("click", function (e) {
-                if (!e.ctrlKey && !e.metaKey)
+                if (e.ctrlKey || e.metaKey)
                     return;
                 if (e.srcElement.classList.contains("evt-close"))
                     unstackNotes(this.dataset.level - 1);
