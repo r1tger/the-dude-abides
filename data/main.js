@@ -56,6 +56,15 @@ function displayNote(href, text, level, animate=true) {
             if (animate) {
                 element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
             }
+            // Add an onclick event listener to the new div.page
+            element.addEventListener("click", function (e) {
+                if (!e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    if (e.srcElement.classList.contains("evt-close")) {
+                        unstackNotes(this.dataset.level - 1);
+                    }
+                }
+            });
         }.bind(null, element, level),
         10
     );

@@ -13,6 +13,9 @@
             <div class="grid">
                 <div class="page" data-level="1">
                     <div class="content">
+                        <div class="nav right">
+                            <a href="#" class="evt-close">Sluiten</a>
+                        </div>
                         <h1>{% if display_id %}{{ ident }}. {% endif %}{{ title }}</h1>
                         {{ content }}
                     </div>
