@@ -58,12 +58,10 @@ function displayNote(href, text, level, animate=true) {
             }
             // Add an onclick event listener to the new div.page
             element.addEventListener("click", function (e) {
-                if (!e.ctrlKey && !e.metaKey) {
-                    e.preventDefault();
-                    if (e.srcElement.classList.contains("evt-close")) {
-                        unstackNotes(this.dataset.level - 1);
-                    }
-                }
+                if (!e.ctrlKey && !e.metaKey)
+                    return;
+                if (e.srcElement.classList.contains("evt-close"))
+                    unstackNotes(this.dataset.level - 1);
             });
         }.bind(null, element, level),
         10
