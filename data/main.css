@@ -121,7 +121,7 @@ ol, ul {
     font-size: 1.8rem;
 }
 
-@media screen and (max-width: 400px) {
+@media only screen and (max-device-width: 640px) {
     body {
         flex-direction: column;
         flex-flow: none;
