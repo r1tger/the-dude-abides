@@ -53,7 +53,7 @@ def zettelkasten(tmpdir):
 
 def test_successors(zettelkasten):
     """ """
-    zettelkasten.explore(1, use_successors=True)
+    zettelkasten.successors(1)
 
 
 def test_create_note(zettelkasten):
@@ -78,7 +78,7 @@ def test_index(zettelkasten):
 
 def test_predecessors(zettelkasten):
     """ """
-    zettelkasten.explore(3, use_successors=False)
+    zettelkasten.predecessors(3)
 
 
 def test_render(zettelkasten):

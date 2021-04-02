@@ -84,7 +84,7 @@ class Zettelkasten(object):
         notes_to = [(G.in_degree(n), n, []) for n in G.predecessors(s)
                     if n not in exit_notes]
         for n in t:
-            # If not path exists between the source and target, skip
+            # If no path exists between the source and target, skip
             if not nx.has_path(G, n, s):
                 continue
             # Add all paths to target notes
@@ -318,7 +318,7 @@ class Zettelkasten(object):
                                date=datetime.utcnow().isoformat())
         return Note(0, 'Register', contents=contents, display_id=False)
 
-    def _explore(self, s, nodes):
+    def _explore(self, s, nodes, depth=None):
         """Find a "train of thought", starting at the note with the provided
         id. Finds all notes from the starting point to any endpoints, by
         following backlinks.
@@ -338,22 +338,33 @@ class Zettelkasten(object):
             for v in nodes(u):
                 if v not in explored:
                     need_visit.add(v)
-        for u in explored:
-            yield(u)
+        return explored
 
-    def explore(self, s, use_successors=False):
-        """Find a "train of thought".
+    def predecessors(self, s, depth=99):
+        """Find a "train of thought" across all predecessors (parents).
 
         :s: id of Note to use as starting point
+        :depth: radius of nodes from center to include
         :returns: Note for all collected notes
 
         """
-        G = self.get_graph()
         s = self.get_note(s)
-        nodes = G.successors if use_successors else G.predecessors
-        # Compile all notes into a single Note
+        G = nx.ego_graph(self.get_graph().reverse(), s, depth, center=False)
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
-                                notes=list(self._explore(s, nodes))))
+                                notes=G))
+
+    def successors(self, s, depth=99):
+        """Find a "train of thought" across all successors (children).
+
+        :s: id of Note to use as starting point
+        :depth: radius of nodes from center to include
+        :returns: Note for all collected notes
+
+        """
+        s = self.get_note(s)
+        G = nx.ego_graph(self.get_graph(), s, depth)
+        return self.create_note(s.get_title(), Note.render('collected.md.tpl',
+                                notes=G))
 
     def render(self):
         """Get all Notes in the Zettelkasten, including a list of referring

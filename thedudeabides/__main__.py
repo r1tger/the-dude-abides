@@ -57,21 +57,23 @@ def main(ctx, zettelkasten, debug):
 
 @main.command()
 @argument('v', type=INT)
+@option('--depth', type=INT, default=99)
 @pass_zk
-def predecessors(zk, v):
+def predecessors(zk, v, depth):
     """Collect train of thought by ID.
     """
     try:
         log.info('Collecting note "{v}"'.format(v=v))
-        edit_note(zk.explore(v, use_successors=False))
+        edit_note(zk.predecessors(v, depth))
     except ValueError as e:
         log.error(e)
 
 
 @main.command()
 @argument('v', type=INT)
+@option('--depth', type=INT, default=99)
 @pass_zk
-def successors(zk, v):
+def successors(zk, v, depth):
     """Collect associated notes by ID.
 
     The provided ID is treated as the endpoint with all notes retrieved up
@@ -79,7 +81,7 @@ def successors(zk, v):
     """
     try:
         log.info('Collecting note "{v}"'.format(v=v))
-        edit_note(zk.explore(v, use_successors=True))
+        edit_note(zk.successors(v, depth))
     except ValueError as e:
         log.error(e)
 
