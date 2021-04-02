@@ -349,7 +349,7 @@ class Zettelkasten(object):
 
         """
         s = self.get_note(s)
-        G = nx.ego_graph(self.get_graph().reverse(), s, depth, center=False)
+        G = nx.ego_graph(self.get_graph().reverse(), s, depth)
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
                                 notes=G))
 
