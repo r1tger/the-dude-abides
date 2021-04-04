@@ -94,7 +94,7 @@ ol, ul {
     text-decoration: line-through;
 }
 
-.nav {
+.div-close {
     display: none;
 }
 
@@ -141,7 +141,7 @@ ol, ul {
         box-shadow: none;
     }
 
-    .nav {
+    .div-close {
         display: flex;
     }
 
