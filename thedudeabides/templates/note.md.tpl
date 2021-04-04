@@ -3,7 +3,7 @@
 ## Referenties
 
 {% for b, note, paths in notes_to %}
-* {{ note|format_note(b, exit_notes) }}
+{{ loop.index }}. {{ note|format_note(b, exit_notes) }}
 {% for path in paths %}
 {% if path|length > 2 %}
 [[{{ loop.index }}](?note={{ path|join('&amp;note=') }})]{% if not loop.last %}, {% endif %}
