@@ -2,7 +2,7 @@
 title: "{{ title }}"
 date: "{{ date }}"
 
-lang: nl
+lang: nl-NL
 documentclass: article
 classoption: twocolumn
 papersize: a4paper

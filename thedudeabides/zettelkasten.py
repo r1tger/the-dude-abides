@@ -349,9 +349,9 @@ class Zettelkasten(object):
 
         """
         s = self.get_note(s)
-        G = nx.ego_graph(self.get_graph().reverse(), s, depth)
+        G = nx.ego_graph(self.get_graph().reverse(), s, depth, center=False)
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
-                                notes=G))
+                                notes=[s] + list(G)))
 
     def successors(self, s, depth=99):
         """Find a "train of thought" across all successors (children).
@@ -362,9 +362,9 @@ class Zettelkasten(object):
 
         """
         s = self.get_note(s)
-        G = nx.ego_graph(self.get_graph(), s, depth)
+        G = nx.ego_graph(self.get_graph(), s, depth, center=False)
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
-                                notes=G))
+                                notes=[s] + list(G)))
 
     def render(self):
         """Get all Notes in the Zettelkasten, including a list of referring
