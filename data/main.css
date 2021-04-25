@@ -7,6 +7,8 @@ html, body {
     height: 100%;
 }
 
+body { font-size: 1.8rem; }
+
 iframe {
     overflow: hidden;
     overflow-y: hidden;
@@ -25,9 +27,7 @@ a:hover {
     border-radius: 0.2rem;
 }
 
-li {
-    margin-bottom: 0.5rem;
-}
+li { margin-bottom: 0.2rem; }
 
 img {
     clear: both;
@@ -41,7 +41,7 @@ img {
 }
 
 blockquote {
-    margin: 0;
+    /*margin: 0;*/
     border-left: 1rem solid #e0e0e0;
     padding-left: 1rem;
 }
@@ -51,16 +51,9 @@ h1, h2, h3 {
     text-overflow: ellipsis;
     overflow: hidden;
     color: #d81e05;
-    padding-bottom: 0.5rem;
 }
 
-h1 {
-    border-bottom: 1px solid #d81e05;
-    font-size: 3.6rem;
-}
-
-h2 { font-size: 2.8rem; }
-h3 { font-size: 1.8rem; }
+h1 { border-bottom: 1px solid #d81e05; }
 
 .footnote-item p {
     display: inline;
@@ -85,9 +78,7 @@ ol, ul {
     flex-grow: 1;
 }
 
-.highlight {
-    text-decoration: line-through;
-}
+.highlight { text-decoration: line-through; }
 
 .page {
     box-shadow: 0 0.8rem 1.4rem rgba(0, 0, 0, 0.25);
@@ -99,23 +90,16 @@ ol, ul {
     overflow-y: auto;
     vertical-align: top;
     box-sizing: border-box;
-
     white-space: normal;
 }
 
-.page:last-child {
-    margin-right: 1.5rem;
-}
+.page:last-child { margin-right: 1.5rem; }
 
 .content {
-    margin: 1rem 2rem;
-    font-size: 1.8rem;
+    margin: 2rem;
     color: #000;
 }
 
-@media (min-width: 40.0rem) {
-    .page {
-        width: 63rem;
-    }
+@media (min-width: 48.0rem) {
+    .page { width: 63rem; }
 }
-
