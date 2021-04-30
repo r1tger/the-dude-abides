@@ -122,7 +122,8 @@ class Zettelkasten(object):
             # Add edges
             for text, v in note.get_links():
                 try:
-                    self.G.add_edge(note, self.get_note(v))
+                    # Add edge, include link text for reference in register
+                    self.G.add_edge(note, self.get_note(v), text=text)
                 except ValueError as e:
                     log.error(f'While processing note "{note.get_id()}": {e}')
         # Update edges to combined in_degree as weight
@@ -267,10 +268,14 @@ class Zettelkasten(object):
         :returns: Tuple of notes sorted by first letter
 
         """
+        def get_predecessors(G, n):
+            # Find all predecessors for a note by incoming edge
+            p = [(u, data['text']) for u, v, data in G.in_edges(n, data=True)]
+            return sorted(p, key=itemgetter(0))
         G = self.get_graph()
         # Get all notes and sort by first letter
         notes = sorted([(n.get_title()[0].upper(), G.in_degree(n), n,
-                        list(G.predecessors(n))) for n in G.nodes()],
+                        get_predecessors(G, n)) for n in G.nodes()],
                        key=itemgetter(0))
         # Group all notes by first letter, yield each group
         for k, group in groupby(notes, key=itemgetter(0)):

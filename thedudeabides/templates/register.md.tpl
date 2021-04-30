@@ -21,8 +21,8 @@ date: "{{ date }}"
 
 {% for _, b, note, ref in v %}
 * {{ note|format_note(b, exit_notes) }}
-{% for n in ref %}
-[{{ n.get_id() }}]({{ n.get_id() }}.html){% if not loop.last %}, {% endif %}
+{% for n, text in ref %}
+[{{ n.get_id() }}]({{ n.get_id() }}.html "{{ text }}"){% if not loop.last %}, {% endif %}
 
 {% endfor %}
 {% endfor %}
