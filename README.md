@@ -22,8 +22,8 @@ This way of thinking is interesting, as a lattice implies both a *start*
 this is entry note 1, which can be reached from exit notes 8 and 14. Entry
 notes are automatically detected (have no outgoing references, are only
 referred to from other notes). If no notes match the criteria for an entry note
-or if a circular reference (1 refers to 2, 2 refers to 3 and 3 refers back to
-1) was created, notes can be manually marked as an entry note.
+or if a circular reference (1 refers to 2, 2 refers back to 1) was created,
+notes can be manually marked as an entry note.
 
 ## What makes the dude unique?
 
