@@ -17,12 +17,6 @@ date: "{{ date }}"
 
 **{{ inbox }} notities in de inbox**
 
-## {{ notes_24h|length }} nieuwe notitie(s) sinds gisteren.
-
-{% for b, note in notes_24h %}
-{{ loop.index }}. {{ note|format_note(b)}}
-{% endfor %}
-
 ## {{ notes_week|length }} nieuwe notitie(s) in de afgelopen zeven dagen.
 
 {% for b, note in notes_week %}
