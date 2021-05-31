@@ -4,11 +4,8 @@ from jinja2 import Environment, PackageLoader
 
 from pathlib import Path
 from datetime import date
-from markdown_it import MarkdownIt
-from markdown_it.token import nest_tokens
-from markdown_it.extensions.footnote import footnote_plugin
 from frontmatter import load, loads, dumps
-from pprint import pprint
+# from pprint import pprint
 
 import logging
 log = logging.getLogger(__name__)
@@ -22,9 +19,11 @@ class Note(object):
     """
     _env = None
 
-    def __init__(self, ident, filename=None, contents=None, display_id=True):
+    def __init__(self, md, ident, filename=None, contents=None,
+                 display_id=True):
         """Constructor.
 
+        :md: Markdown parser instance
         :ident: unique identifier for the Note
         :filename: filename of Note file. Can be relative or absolute
         :contents: contents for Note. If not provided, filename is loaded on
@@ -37,22 +36,8 @@ class Note(object):
         self.contents = load(filename) if contents is None else loads(contents)
         self.display_id = display_id
         self.front_matter = None
-
-        def render_link_open(self, tokens, idx, options, env):
-            """Change any links to include '.html'. """
-            ai = tokens[idx].attrIndex('target')
-            try:
-                # If the target is an int, convert to point to an HTML file
-                target = '{t}.html'.format(t=int(tokens[idx].attrs[ai][1]))
-                tokens[idx].attrs[ai][1] = target
-            except ValueError:
-                # Use target as-is (don't break other links)
-                pass
-            return self.renderToken(tokens, idx, options, env)
-
-        # Parse the contents of the note
-        self.md = MarkdownIt('default').use(footnote_plugin)
-        self.md.add_render_rule('link_open', render_link_open)
+        # Parsed contents
+        self.md = md
         self.T = self.md.parse(self.get_body())
 
     def __eq__(self, other):

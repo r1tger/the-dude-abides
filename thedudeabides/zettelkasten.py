@@ -11,6 +11,10 @@ from itertools import groupby
 from operator import itemgetter
 from statistics import mean
 
+from markdown_it import MarkdownIt
+from markdown_it.token import nest_tokens
+from markdown_it.extensions.footnote import footnote_plugin
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -39,6 +43,22 @@ class Zettelkasten(object):
         self.zettelkasten = zettelkasten
         self.G = None
 
+        def render_link_open(self, tokens, idx, options, env):
+            """Change any links to include '.html'. """
+            ai = tokens[idx].attrIndex('target')
+            try:
+                # If the target is an int, convert to point to an HTML file
+                target = '{t}.html'.format(t=int(tokens[idx].attrs[ai][1]))
+                tokens[idx].attrs[ai][1] = target
+            except ValueError:
+                # Use target as-is (don't break other links)
+                pass
+            return self.renderToken(tokens, idx, options, env)
+
+        # Set up Markdown parser
+        self.md = MarkdownIt('default').use(footnote_plugin)
+        self.md.add_render_rule('link_open', render_link_open)
+
     def get_note(self, v):
         """Get a single Note instance by id.
 
@@ -66,7 +86,7 @@ class Zettelkasten(object):
                     v = int(splitext(name)[0])
                 except ValueError:
                     continue
-                yield(Note(v, join(root, name)))
+                yield(Note(self.md, v, join(root, name)))
 
     def get_notes_to(self, s, t):
         """Get all Notes that refer to Note v. If list t is provided, paths are
@@ -191,7 +211,7 @@ class Zettelkasten(object):
         # Compose Note
         contents = Note.render('new.md.tpl', title=title, body=body,
                                date=datetime.utcnow().isoformat())
-        return Note(v, self.get_filename(v), contents)
+        return Note(self.md, v, self.get_filename(v), contents)
 
     def exists(self, v):
         """Check if a Note with the provided id exists in the graph.
@@ -271,7 +291,7 @@ class Zettelkasten(object):
                                exit_notes=exit_notes,
                                inbox=self._inbox(),
                                date=datetime.utcnow().isoformat())
-        return Note(0, contents=contents, display_id=False)
+        return Note(self.md, 0, contents=contents, display_id=False)
 
     def _register(self):
         """Collect all notes and group by first leter of note title.
@@ -305,7 +325,7 @@ class Zettelkasten(object):
                                stats=self.get_stats(), exit_notes=exit_notes,
                                entry_notes=entry_notes,
                                date=datetime.utcnow().isoformat())
-        return Note(0, 'Register', contents=contents, display_id=False)
+        return Note(self.md, 0, 'Register', contents=contents, display_id=False)
 
     def _tags(self):
         """Collect all notes and group by tag.
@@ -332,7 +352,7 @@ class Zettelkasten(object):
         """
         contents = Note.render('tags.md.tpl', notes=self._tags(),
                                date=datetime.utcnow().isoformat())
-        return Note(0, 'Register', contents=contents, display_id=False)
+        return Note(self.md, 0, 'Register', contents=contents, display_id=False)
 
     def _explore(self, s, nodes, depth=None):
         """Find a "train of thought", starting at the note with the provided
@@ -408,7 +428,7 @@ class Zettelkasten(object):
                                notes_24h=notes_24h, notes_week=notes_week,
                                inbox=len(self._inbox()),
                                date=datetime.utcnow().isoformat())
-        return Note(0, contents=contents, display_id=False)
+        return Note(self.md, 0, contents=contents, display_id=False)
 
     def render(self):
         """Get all Notes in the Zettelkasten, including a list of referring
@@ -423,7 +443,7 @@ class Zettelkasten(object):
         for n in G.nodes():
             notes_to = self.get_notes_to(n, exit_notes)
             # Render contents with references as a new Note
-            note = Note(n.get_id(), contents=Note.render('note.md.tpl',
+            note = Note(self.md, n.get_id(), contents=Note.render('note.md.tpl',
                         ident=n.get_id(), contents=n.get_contents(),
                         notes_to=notes_to, exit_notes=exit_notes))
             yield(note)
