@@ -389,18 +389,17 @@ class Zettelkasten(object):
         :returns: Note containing an overview of today
 
         """
-        today = date.today()
+        t = date.today()
         # How many days have I been alive?
-        days_from = (today - birthday).days
+        days_from = (t - birthday).days
         # How many days until I reach next [age] milestone?
-        age = today.year - birthday.year
+        age = t.year - birthday.year
         milestone = age if age % 10 == 0 else age + 10 - age % 10
         next_birthday = birthday.replace(year=birthday.year + milestone)
-        days_to = (next_birthday - today).days
+        days_to = (next_birthday - t).days
         # Days since COVID started in NL
-        days_covid = (today - date.fromisoformat('2020-02-27')).days
-        #
-        t = date.today()
+        days_covid = (t - date.fromisoformat('2020-02-27')).days
+        # Created notes
         notes_24h = self.get_notes_date(t - timedelta(hours=24), NOTE_CDATE)
         notes_week = self.get_notes_date(t - timedelta(days=7), NOTE_CDATE)
         contents = Note.render('today.md.tpl', days_from=days_from,
