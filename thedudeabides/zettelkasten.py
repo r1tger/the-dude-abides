@@ -98,6 +98,13 @@ class Zettelkasten(object):
             notes_to.append((G.in_degree(n), n, paths))
         return sorted(notes_to, key=itemgetter(0), reverse=True)
 
+    def get_notes_date(self, date, attr):
+        """ """
+        G = self.get_graph()
+        # Get all notes from specified data till now
+        notes = [n for n, d in G.nodes(data=True) if d[attr] > date]
+        return self._get_notes(notes)
+
     def get_filename(self, v):
         """Create a filename based on Note ID. """
         return(join(self.zettelkasten, f'{v}.{EXT_NOTE}'))
@@ -166,19 +173,6 @@ class Zettelkasten(object):
         stats['nr_exit'] = len(self._exit_notes())
         stats['nr_exit_perc'] = int((stats['nr_exit'] /
                                      stats['nr_vertices']) * 100)
-
-        # File creation
-        def count_notes(date, attr):
-            """ """
-            return len([n for n, d in G.nodes(data=True) if d[attr] > date])
-
-        today = date.today()
-        stats['nr_created_24h'] = count_notes(today - timedelta(hours=24),
-                                              NOTE_CDATE)
-        stats['nr_created_week'] = count_notes(today - timedelta(days=7),
-                                               NOTE_CDATE)
-        stats['nr_modified_24h'] = count_notes(today - timedelta(hours=24),
-                                               NOTE_MDATE)
         # Statistics
         return stats
 
@@ -405,10 +399,14 @@ class Zettelkasten(object):
         days_to = (next_birthday - today).days
         # Days since COVID started in NL
         days_covid = (today - date.fromisoformat('2020-02-27')).days
-
+        #
+        t = date.today()
+        notes_24h = self.get_notes_date(t - timedelta(hours=24), NOTE_CDATE)
+        notes_week = self.get_notes_date(t - timedelta(days=7), NOTE_CDATE)
         contents = Note.render('today.md.tpl', days_from=days_from,
                                days_to=days_to, milestone=milestone,
                                days_covid=days_covid, stats=self.get_stats(),
+                               notes_24h=notes_24h, notes_week=notes_week,
                                inbox=len(self._inbox()),
                                date=datetime.utcnow().isoformat())
         return Note(0, contents=contents, display_id=False)
