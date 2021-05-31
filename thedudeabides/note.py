@@ -2,10 +2,13 @@
 
 from jinja2 import Environment, PackageLoader
 
+from pathlib import Path
+from datetime import date
 from markdown_it import MarkdownIt
 from markdown_it.token import nest_tokens
 from markdown_it.extensions.footnote import footnote_plugin
 from frontmatter import load, loads, dumps
+from pprint import pprint
 
 import logging
 log = logging.getLogger(__name__)
@@ -131,6 +134,24 @@ class Note(object):
         if 'tags' not in self.contents:
             return []
         return self.contents['tags']
+
+    def get_cdate(self):
+        """Get the creation date of the Note.
+
+        :returns: cdate
+
+        """
+        return date.fromisoformat(self.get_tag('date').split('T')[0])
+
+    def get_mdate(self):
+        """Get the modification date of the Note. This uses the mtime attribute
+        of the file, which may change if the file has been copied previously.
+
+        :returns: mdate
+
+        """
+        filename = Path(self.filename)
+        return date.fromtimestamp(filename.stat().st_mtime)
 
     def get_title(self):
         """Get the title of the Note. Title is stored as a tag in the header.

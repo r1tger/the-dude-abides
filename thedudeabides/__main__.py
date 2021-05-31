@@ -10,6 +10,7 @@ from os.path import join
 # from pprint import pprint
 from subprocess import run
 from sys import exit
+from datetime import date
 
 import logging
 log = logging.getLogger(__name__)
@@ -144,6 +145,16 @@ def render(zk, output):
     with open(join(output, 'tags.html'), 'w') as f:
         f.write(zk.tags().to_html())
     log.info('Completed rendering of notes')
+
+
+@main.command()
+@argument('birthday', default='1983-05-14')
+@pass_zk
+def today(zk, birthday):
+    """Show some statistics for today.
+    """
+    log.info('Starting the day ...')
+    edit_note(zk.today(date.fromisoformat(birthday)))
 
 
 if __name__ == "__main__":

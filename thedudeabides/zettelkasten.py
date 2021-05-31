@@ -6,7 +6,7 @@ import networkx as nx
 from os import walk
 from os.path import join, splitext, isdir
 from pprint import pprint
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from itertools import groupby
 from operator import itemgetter
 from statistics import mean
@@ -16,6 +16,8 @@ log = logging.getLogger(__name__)
 
 EXT_NOTE = 'md'
 NOTE_ID = 'ident'
+NOTE_CDATE = 'cdate'
+NOTE_MDATE = 'mdate'
 
 
 class Zettelkasten(object):
@@ -115,7 +117,9 @@ class Zettelkasten(object):
 
         # Add all available Notes to the graph
         self.G = nx.DiGraph()
-        self.G.add_nodes_from([(n, {NOTE_ID: n.get_id()})
+        self.G.add_nodes_from([(n, {NOTE_ID: n.get_id(),
+                                    NOTE_CDATE: n.get_cdate(),
+                                    NOTE_MDATE: n.get_mdate()})
                                for n in self.get_notes()])
         # Get all Notes
         for note in self.G.nodes():
@@ -162,6 +166,19 @@ class Zettelkasten(object):
         stats['nr_exit'] = len(self._exit_notes())
         stats['nr_exit_perc'] = int((stats['nr_exit'] /
                                      stats['nr_vertices']) * 100)
+
+        # File creation
+        def count_notes(date, attr):
+            """ """
+            return len([n for n, d in G.nodes(data=True) if d[attr] > date])
+
+        today = date.today()
+        stats['nr_created_24h'] = count_notes(today - timedelta(hours=24),
+                                              NOTE_CDATE)
+        stats['nr_created_week'] = count_notes(today - timedelta(days=7),
+                                               NOTE_CDATE)
+        stats['nr_modified_24h'] = count_notes(today - timedelta(hours=24),
+                                               NOTE_MDATE)
         # Statistics
         return stats
 
@@ -370,6 +387,31 @@ class Zettelkasten(object):
         G = nx.ego_graph(self.get_graph(), s, depth, center=False)
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
                                 notes=[s] + list(G)))
+
+    def today(self, birthday=False):
+        """Create an overview of today.
+
+        :birthday: date with birthday
+        :returns: Note containing an overview of today
+
+        """
+        today = date.today()
+        # How many days have I been alive?
+        days_from = (today - birthday).days
+        # How many days until I reach next [age] milestone?
+        age = today.year - birthday.year
+        milestone = age if age % 10 == 0 else age + 10 - age % 10
+        next_birthday = birthday.replace(year=birthday.year + milestone)
+        days_to = (next_birthday - today).days
+        # Days since COVID started in NL
+        days_covid = (today - date.fromisoformat('2020-02-27')).days
+
+        contents = Note.render('today.md.tpl', days_from=days_from,
+                               days_to=days_to, milestone=milestone,
+                               days_covid=days_covid, stats=self.get_stats(),
+                               inbox=len(self._inbox()),
+                               date=datetime.utcnow().isoformat())
+        return Note(0, contents=contents, display_id=False)
 
     def render(self):
         """Get all Notes in the Zettelkasten, including a list of referring
