@@ -120,14 +120,6 @@ class Note(object):
             return []
         return self.contents['tags']
 
-    def get_cdate(self):
-        """Get the creation date of the Note.
-
-        :returns: cdate
-
-        """
-        return date.fromisoformat(self.get_tag('date').split('T')[0])
-
     def get_mdate(self):
         """Get the modification date of the Note. This uses the mtime attribute
         of the file, which may change if the file has been copied previously.

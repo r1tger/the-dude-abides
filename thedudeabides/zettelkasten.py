@@ -5,14 +5,13 @@ from .note import Note
 import networkx as nx
 from os import walk
 from os.path import join, splitext, isdir
-from pprint import pprint
 from datetime import datetime, date, timedelta
 from itertools import groupby
 from operator import itemgetter
 from statistics import mean
+# from pprint import pprint
 
 from markdown_it import MarkdownIt
-from markdown_it.token import nest_tokens
 from markdown_it.extensions.footnote import footnote_plugin
 
 import logging
@@ -20,7 +19,6 @@ log = logging.getLogger(__name__)
 
 EXT_NOTE = 'md'
 NOTE_ID = 'ident'
-NOTE_CDATE = 'cdate'
 NOTE_MDATE = 'mdate'
 
 
@@ -42,22 +40,22 @@ class Zettelkasten(object):
             raise ValueError('Invalid Zettelkasten directory provided')
         self.zettelkasten = zettelkasten
         self.G = None
-
-        def render_link_open(self, tokens, idx, options, env):
-            """Change any links to include '.html'. """
-            ai = tokens[idx].attrIndex('target')
-            try:
-                # If the target is an int, convert to point to an HTML file
-                target = '{t}.html'.format(t=int(tokens[idx].attrs[ai][1]))
-                tokens[idx].attrs[ai][1] = target
-            except ValueError:
-                # Use target as-is (don't break other links)
-                pass
-            return self.renderToken(tokens, idx, options, env)
-
         # Set up Markdown parser
         self.md = MarkdownIt('default').use(footnote_plugin)
-        self.md.add_render_rule('link_open', render_link_open)
+        self.md.add_render_rule('link_open', Zettelkasten.render_link_open)
+
+    @staticmethod
+    def render_link_open(instance, tokens, idx, options, env):
+        """Change any links to include '.html'. """
+        ai = tokens[idx].attrIndex('target')
+        try:
+            # If the target is an int, convert to point to an HTML file
+            target = '{t}.html'.format(t=int(tokens[idx].attrs[ai][1]))
+            tokens[idx].attrs[ai][1] = target
+        except ValueError:
+            # Use target as-is (don't break other links)
+            pass
+        return instance.renderToken(tokens, idx, options, env)
 
     def get_note(self, v):
         """Get a single Note instance by id.
@@ -145,7 +143,6 @@ class Zettelkasten(object):
         # Add all available Notes to the graph
         self.G = nx.DiGraph()
         self.G.add_nodes_from([(n, {NOTE_ID: n.get_id(),
-                                    NOTE_CDATE: n.get_cdate(),
                                     NOTE_MDATE: n.get_mdate()})
                                for n in self.get_notes()])
         # Get all Notes
@@ -325,7 +322,8 @@ class Zettelkasten(object):
                                stats=self.get_stats(), exit_notes=exit_notes,
                                entry_notes=entry_notes,
                                date=datetime.utcnow().isoformat())
-        return Note(self.md, 0, 'Register', contents=contents, display_id=False)
+        return Note(self.md, 0, 'Register', contents=contents,
+                    display_id=False)
 
     def _tags(self):
         """Collect all notes and group by tag.
@@ -352,7 +350,8 @@ class Zettelkasten(object):
         """
         contents = Note.render('tags.md.tpl', notes=self._tags(),
                                date=datetime.utcnow().isoformat())
-        return Note(self.md, 0, 'Register', contents=contents, display_id=False)
+        return Note(self.md, 0, 'Register', contents=contents,
+                    display_id=False)
 
     def _explore(self, s, nodes, depth=None):
         """Find a "train of thought", starting at the note with the provided
@@ -414,19 +413,17 @@ class Zettelkasten(object):
         days_from = (t - birthday).days
         # How many days until I reach next [age] milestone?
         age = t.year - birthday.year
-        milestone = age if age % 10 == 0 else age + 10 - age % 10
+        milestone = age if age % 10 == 0 else (age + 10) - (age % 10)
         next_birthday = birthday.replace(year=birthday.year + milestone)
         days_to = (next_birthday - t).days
         # Days since COVID started in NL
         days_covid = (t - date.fromisoformat('2020-02-27')).days
         # Created notes
-        notes_24h = self.get_notes_date(t - timedelta(hours=24), NOTE_CDATE)
-        notes_week = self.get_notes_date(t - timedelta(days=7), NOTE_CDATE)
+        notes_week = self.get_notes_date(t - timedelta(days=7), NOTE_MDATE)
         contents = Note.render('today.md.tpl', days_from=days_from,
                                days_to=days_to, milestone=milestone,
                                days_covid=days_covid, stats=self.get_stats(),
-                               notes_24h=notes_24h, notes_week=notes_week,
-                               inbox=len(self._inbox()),
+                               notes_week=notes_week, inbox=len(self._inbox()),
                                date=datetime.utcnow().isoformat())
         return Note(self.md, 0, contents=contents, display_id=False)
 
@@ -443,7 +440,8 @@ class Zettelkasten(object):
         for n in G.nodes():
             notes_to = self.get_notes_to(n, exit_notes)
             # Render contents with references as a new Note
-            note = Note(self.md, n.get_id(), contents=Note.render('note.md.tpl',
-                        ident=n.get_id(), contents=n.get_contents(),
-                        notes_to=notes_to, exit_notes=exit_notes))
+            note = Note(self.md, n.get_id(), contents=Note.render(
+                        'note.md.tpl', ident=n.get_id(),
+                        contents=n.get_contents(), notes_to=notes_to,
+                        exit_notes=exit_notes))
             yield(note)
