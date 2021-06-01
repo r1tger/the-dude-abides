@@ -426,26 +426,8 @@ class Zettelkasten(object):
             suggestions.append(((b, t), sample(review, 3)))
         return suggestions
 
-    def _suggestions2(self):
-        """ """
-        G = self.get_graph()
-        suggestions = []
-        for b, t in self._get_notes(sample(G.nodes(), 3)):
-            review = [s for b, s in self._exit_notes()
-                      if not nx.has_path(G, s, t) and s is not t]
-            log.info('Found {x} candidates for {t}'.format(x=len(review), t=t))
-            suggestions.append(((b, t), sample(review, 3)))
-        return suggestions
-
     def today(self, birthday=False):
         """Create an overview of today.
-
-        Suggestions:
-        * pick three notes at random;
-        * create a list of exit notes which do not have a path from the random
-          note;
-        * add any exit note not in the path as a review candidate for the
-          random note.
 
         :birthday: date with birthday
         :returns: Note containing an overview of today
