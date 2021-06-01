@@ -9,16 +9,25 @@ date: "{{ date }}"
 
 ---
 
-{{ stats.nr_vertices }} totaal aantal *notities*
-{{ stats.nr_edges }} totaal aantal *relaties* (gemiddeld {{ stats.avg_edges }} relaties per notitie)
-{{ stats.word_count }} totaal aantal *woorden*
+{{ stats.nr_vertices }} *notities*
+{{ stats.nr_edges }} *relaties* (gemiddeld {{ stats.avg_edges }} relaties per notitie)
+{{ stats.word_count }} *woorden*
 
 ---
 
-**{{ inbox }} notities in de inbox**
+**{{ inbox }} notities in de INBOX**
+
+## Recensie met context
+
+{% for note, review in suggestions %}
+{{ loop.index }}. {{ note[1]|format_note(note[0]) }}
+{% for source in review %}
+    * {{ source|format_note(0) }}
+{% endfor %}
+{% endfor %}
 
 ## {{ notes_week|length }} nieuwe/aangepaste notitie(s) in de afgelopen zeven dagen.
 
 {% for b, note in notes_week %}
-{{ loop.index }}. {{ note|format_note(b)}}
+{{ loop.index }}. {{ note|format_note(b) }}
 {% endfor %}

@@ -9,7 +9,8 @@ from datetime import datetime, date, timedelta
 from itertools import groupby
 from operator import itemgetter
 from statistics import mean
-# from pprint import pprint
+from random import sample
+from pprint import pprint
 
 from markdown_it import MarkdownIt
 from markdown_it.extensions.footnote import footnote_plugin
@@ -401,8 +402,50 @@ class Zettelkasten(object):
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
                                 notes=[s] + list(G)))
 
+    def _suggestions(self):
+        """Generate a list of suggestions for three sampled notes. Suggested
+        notes are not part of the (multiple) train of thought(s) the sampled
+        notes are a part of.
+
+        :returns: list((references, note), [suggested notes])
+
+        """
+        G = self.get_graph()
+        suggestions = []
+        exit_notes = self._exit_notes()
+        for b, t in self._get_notes(sample(G.nodes(), 3)):
+            # Find all entry notes that have a path to the sampled note
+            entry_notes = [s for _, s in self._entry_notes()
+                           if nx.has_path(G, t, s) and s is not t]
+            review = [s for _, s in exit_notes]
+            for n in entry_notes:
+                for _, s in exit_notes:
+                    # Remove all exit notes that have a path to the entry notes
+                    if nx.has_path(G, s, n) and s in review:
+                        review.remove(s)
+            suggestions.append(((b, t), sample(review, 3)))
+        return suggestions
+
+    def _suggestions2(self):
+        """ """
+        G = self.get_graph()
+        suggestions = []
+        for b, t in self._get_notes(sample(G.nodes(), 3)):
+            review = [s for b, s in self._exit_notes()
+                      if not nx.has_path(G, s, t) and s is not t]
+            log.info('Found {x} candidates for {t}'.format(x=len(review), t=t))
+            suggestions.append(((b, t), sample(review, 3)))
+        return suggestions
+
     def today(self, birthday=False):
         """Create an overview of today.
+
+        Suggestions:
+        * pick three notes at random;
+        * create a list of exit notes which do not have a path from the random
+          note;
+        * add any exit note not in the path as a review candidate for the
+          random note.
 
         :birthday: date with birthday
         :returns: Note containing an overview of today
@@ -420,10 +463,12 @@ class Zettelkasten(object):
         days_covid = (t - date.fromisoformat('2020-02-27')).days
         # Created notes
         notes_week = self.get_notes_date(t - timedelta(days=7), NOTE_MDATE)
+        # Suggestions
         contents = Note.render('today.md.tpl', days_from=days_from,
                                days_to=days_to, milestone=milestone,
                                days_covid=days_covid, stats=self.get_stats(),
                                notes_week=notes_week, inbox=len(self._inbox()),
+                               suggestions=self._suggestions(),
                                date=datetime.utcnow().isoformat())
         return Note(self.md, 0, contents=contents, display_id=False)
 
