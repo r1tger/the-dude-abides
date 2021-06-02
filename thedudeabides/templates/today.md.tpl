@@ -21,7 +21,7 @@ date: "{{ date }}"
 
 {% for note, review in suggestions %}
 {{ loop.index }}. {{ note[1]|format_note(note[0]) }}
-{% for source in review %}
-    * {{ source|format_note(0) }}
+{% for b, source in review %}
+    * {{ source|format_note(b) }}
 {% endfor %}
 {% endfor %}

@@ -409,22 +409,24 @@ class Zettelkasten(object):
 
         :returns: list((references, note), [suggested notes])
 
+        :todo: a possible optimalisation is to limited the nodes for review to
+               only include exit notes. This reduces the number of notes to
+               check to ~30% of the number of notes in the Zettelkasten.
         """
         G = self.get_graph()
         suggestions = []
-        exit_notes = self._exit_notes()
-        # for b, t in self._get_notes(sample(G.nodes(), 3)):
         for b, t in self.get_notes_date(date.today() - timedelta(days=7)):
             # Find all entry notes that have a path to the sampled note
             entry_notes = [s for _, s in self._entry_notes()
                            if nx.has_path(G, t, s) and s is not t]
-            review = [s for _, s in exit_notes]
+            review = list(G.nodes())
             for n in entry_notes:
-                for _, s in exit_notes:
+                for s in G.nodes():
                     # Remove all exit notes that have a path to the entry notes
                     if nx.has_path(G, s, n) and s in review:
                         review.remove(s)
-            suggestions.append(((b, t), sample(review, 3)))
+            log.info('{t} has {x} candidates'.format(x=len(review), t=t))
+            suggestions.append(((b, t), self._get_notes(sample(review, 3))))
         return suggestions
 
     def today(self, birthday=False):
