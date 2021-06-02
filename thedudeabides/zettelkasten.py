@@ -117,7 +117,7 @@ class Zettelkasten(object):
             notes_to.append((G.in_degree(n), n, paths))
         return sorted(notes_to, key=itemgetter(0), reverse=True)
 
-    def get_notes_date(self, date, attr):
+    def get_notes_date(self, date, attr=NOTE_MDATE):
         """ """
         G = self.get_graph()
         # Get all notes from specified data till now
@@ -413,7 +413,8 @@ class Zettelkasten(object):
         G = self.get_graph()
         suggestions = []
         exit_notes = self._exit_notes()
-        for b, t in self._get_notes(sample(G.nodes(), 3)):
+        # for b, t in self._get_notes(sample(G.nodes(), 3)):
+        for b, t in self.get_notes_date(date.today() - timedelta(days=7)):
             # Find all entry notes that have a path to the sampled note
             entry_notes = [s for _, s in self._entry_notes()
                            if nx.has_path(G, t, s) and s is not t]
@@ -443,13 +444,11 @@ class Zettelkasten(object):
         days_to = (next_birthday - t).days
         # Days since COVID started in NL
         days_covid = (t - date.fromisoformat('2020-02-27')).days
-        # Created notes
-        notes_week = self.get_notes_date(t - timedelta(days=7), NOTE_MDATE)
         # Suggestions
         contents = Note.render('today.md.tpl', days_from=days_from,
                                days_to=days_to, milestone=milestone,
                                days_covid=days_covid, stats=self.get_stats(),
-                               notes_week=notes_week, inbox=len(self._inbox()),
+                               inbox=len(self._inbox()),
                                suggestions=self._suggestions(),
                                date=datetime.utcnow().isoformat())
         return Note(self.md, 0, contents=contents, display_id=False)

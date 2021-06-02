@@ -17,17 +17,11 @@ date: "{{ date }}"
 
 **{{ inbox }} notities in de INBOX**
 
-## Recensie met context
+## {{ suggestions|length }} nieuwe/aangepaste notitie(s) in de afgelopen zeven dagen
 
 {% for note, review in suggestions %}
 {{ loop.index }}. {{ note[1]|format_note(note[0]) }}
 {% for source in review %}
     * {{ source|format_note(0) }}
 {% endfor %}
-{% endfor %}
-
-## {{ notes_week|length }} nieuwe/aangepaste notitie(s) in de afgelopen zeven dagen.
-
-{% for b, note in notes_week %}
-{{ loop.index }}. {{ note|format_note(b) }}
 {% endfor %}
