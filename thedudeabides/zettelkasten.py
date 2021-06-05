@@ -403,9 +403,9 @@ class Zettelkasten(object):
                                 notes=[s] + list(G)))
 
     def _suggestions(self):
-        """Generate a list of suggestions for three sampled notes. Suggested
-        notes are not part of the (multiple) train of thought(s) the sampled
-        notes are a part of.
+        """Generate a list of suggestions for recently modified notes.
+        Suggested notes are not part of the (multiple) train of thought(s) the
+        sampled notes are a part of.
 
         :returns: list((references, note), [suggested notes])
 
@@ -422,14 +422,14 @@ class Zettelkasten(object):
             review = list(G.nodes())
             for n in entry_notes:
                 for s in G.nodes():
-                    # Remove all exit notes that have a path to the entry notes
+                    # Remove all notes that have a path to the entry note
                     if nx.has_path(G, s, n) and s in review:
                         review.remove(s)
             log.info('{t} has {x} candidates'.format(x=len(review), t=t))
             suggestions.append(((b, t), self._get_notes(sample(review, 3))))
         return suggestions
 
-    def today(self, birthday=False):
+    def today(self, birthday):
         """Create an overview of today.
 
         :birthday: date with birthday
