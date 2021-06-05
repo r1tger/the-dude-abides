@@ -65,6 +65,10 @@ ol, ul {
     margin: 1.8rem 0 1.8rem 2rem;
 }
 
+hr {
+    border-top-color: #d81e05;
+}
+
 .grid-container {
     flex: 1;
     display: flex;
