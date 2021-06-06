@@ -114,11 +114,12 @@ hr {
     margin: 0;
     padding: 0;
     overflow: hidden;
+    white-space: nowrap;
 }
 
 .navigation li {
-    float: left;
     margin-bottom: 0;
+    display: inline-block;
 }
 
 .navigation li a {
