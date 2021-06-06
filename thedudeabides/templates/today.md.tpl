@@ -17,6 +17,7 @@ date: "{{ date }}"
 
 **{{ inbox }} notities in de INBOX**
 
+{% if suggestions|length > 0 %}
 ## {{ suggestions|length }} nieuwe/aangepaste notitie(s) in de afgelopen {{ days }} dagen
 
 {% for note, review in suggestions %}
@@ -25,3 +26,4 @@ date: "{{ date }}"
     * {{ source|format_note(b) }}
 {% endfor %}
 {% endfor %}
+{% endif %}

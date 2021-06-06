@@ -454,6 +454,7 @@ class Zettelkasten(object):
                                days_covid=days_covid, stats=self.get_stats(),
                                inbox=len(self._inbox()),
                                suggestions=self._suggestions(days), days=days,
+                               entry_notes=self._entry_notes(),
                                date=datetime.utcnow().isoformat())
         return Note(self.md, 0, contents=contents, display_id=False)
 
