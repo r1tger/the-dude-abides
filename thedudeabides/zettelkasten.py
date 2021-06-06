@@ -402,11 +402,12 @@ class Zettelkasten(object):
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
                                 notes=[s] + list(G)))
 
-    def _suggestions(self):
+    def _suggestions(self, days):
         """Generate a list of suggestions for recently modified notes.
         Suggested notes are not part of the (multiple) train of thought(s) the
         sampled notes are a part of.
 
+        :days: number of days in the past to look for modified notes
         :returns: list((references, note), [suggested notes])
 
         :todo: a possible optimalisation is to limited the nodes for review to
@@ -415,7 +416,7 @@ class Zettelkasten(object):
         """
         G = self.get_graph()
         suggestions = []
-        for b, t in self.get_notes_date(date.today() - timedelta(days=7)):
+        for b, t in self.get_notes_date(date.today() - timedelta(days=days)):
             # Find all entry notes that have a path to the sampled note
             entry_notes = [s for _, s in self._entry_notes()
                            if nx.has_path(G, t, s) and s is not t]
@@ -429,10 +430,11 @@ class Zettelkasten(object):
             suggestions.append(((b, t), self._get_notes(sample(review, 3))))
         return suggestions
 
-    def today(self, birthday):
+    def today(self, birthday, days=3):
         """Create an overview of today.
 
         :birthday: date with birthday
+        :days: number of days in the past to look for modified notes
         :returns: Note containing an overview of today
 
         """
@@ -451,7 +453,7 @@ class Zettelkasten(object):
                                days_to=days_to, milestone=milestone,
                                days_covid=days_covid, stats=self.get_stats(),
                                inbox=len(self._inbox()),
-                               suggestions=self._suggestions(),
+                               suggestions=self._suggestions(days), days=days,
                                date=datetime.utcnow().isoformat())
         return Note(self.md, 0, contents=contents, display_id=False)
 

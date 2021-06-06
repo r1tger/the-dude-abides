@@ -149,12 +149,14 @@ def render(zk, output):
 
 @main.command()
 @argument('birthday', default='1983-05-14')
+@option('--days', default=3, type=INT,
+        help='Number of days in the past to look for notes.')
 @pass_zk
-def today(zk, birthday):
+def today(zk, birthday, days):
     """Show some statistics for today.
     """
     log.info('Starting the day ...')
-    edit_note(zk.today(date.fromisoformat(birthday)))
+    edit_note(zk.today(date.fromisoformat(birthday), days))
 
 
 if __name__ == "__main__":
