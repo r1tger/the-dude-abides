@@ -159,5 +159,14 @@ def today(zk, birthday, days):
     edit_note(zk.today(date.fromisoformat(birthday), days))
 
 
+@main.command()
+@argument('v', type=INT)
+@pass_zk
+def lattice(zk, v):
+    """
+    """
+    edit_note(zk.lattice(v))
+
+
 if __name__ == "__main__":
     exit(main())

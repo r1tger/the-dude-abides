@@ -229,7 +229,7 @@ class Zettelkasten(object):
                  reverse=True)]
         return self._get_notes(notes[:10])
 
-    def _get_notes(self, nodes):
+    def _get_notes(self, nodes, sort=True):
         """Create a list of notes n for use in templates.
 
         :vertices: list of vertex IDs
@@ -237,7 +237,8 @@ class Zettelkasten(object):
         """
         G = self.get_graph()
         notes = [(G.in_degree(n), n) for n in nodes]
-        return sorted(notes, key=itemgetter(0), reverse=True)
+        return (sorted(notes, key=itemgetter(0), reverse=True)
+                if sort else notes)
 
     def _exit_notes(self):
         """Get a list of exit notes. Exit notes have no incoming edges, which
@@ -455,6 +456,26 @@ class Zettelkasten(object):
                                inbox=len(self._inbox()),
                                suggestions=self._suggestions(days), days=days,
                                entry_notes=self._entry_notes(),
+                               date=datetime.utcnow().isoformat())
+        return Note(self.md, 0, contents=contents, display_id=False)
+
+    def lattice(self, v):
+        """TODO: Docstring for lineage.
+
+        :v: TODO
+        :returns: TODO
+
+        """
+        s = self.get_note(v)
+        G = self.get_graph()
+
+        lattice = []
+        for t in [t for _, t in self._entry_notes()]:
+            if nx.has_path(G, s, t) and s is not t:
+                path = self._get_notes(list(nx.all_shortest_paths(
+                       G, s, t, weight='weight'))[0][::-1], False)
+                lattice.append((t, path))
+        contents = Note.render('lattice.md.tpl', source=s, lattice=lattice,
                                date=datetime.utcnow().isoformat())
         return Note(self.md, 0, contents=contents, display_id=False)
 
