@@ -8,7 +8,7 @@ date: "{{ date }}"
 ## {{ t }}
 
 {% for b, note in path %}
-* {{ note|format_note(b) }}
+{{ loop.index }}. {{ note|format_note(b) }}
 {% endfor %}
 {% endfor %}
 
