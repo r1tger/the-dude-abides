@@ -460,10 +460,11 @@ class Zettelkasten(object):
         return Note(self.md, 0, contents=contents, display_id=False)
 
     def lattice(self, v):
-        """TODO: Docstring for lineage.
+        """Create a lattice from any entry note that has a path to Note v. If
+        multiple lattices are found, all lattices are displayed.
 
-        :v: TODO
-        :returns: TODO
+        :v: ID of Note to find lattices for
+        :returns: Note containing lattices
 
         """
         s = self.get_note(v)
