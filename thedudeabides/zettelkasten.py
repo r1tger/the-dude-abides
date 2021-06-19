@@ -10,7 +10,7 @@ from itertools import groupby
 from operator import itemgetter
 from statistics import mean
 from random import sample
-from pprint import pprint
+# from pprint import pprint
 
 from markdown_it import MarkdownIt
 from markdown_it.extensions.footnote import footnote_plugin
@@ -163,7 +163,7 @@ class Zettelkasten(object):
         notes = set()
         for n in [n for n in self.G.nodes() if n.is_hidden()]:
             notes |= set(self._explore(n, self.G.predecessors))
-        log.info('Deleted notes: "{n}"'.format(n='", "'.join(map(str, notes))))
+        log.debug('Deleted note: "{n}"'.format(n='", "'.join(map(str, notes))))
         self.G.remove_nodes_from(notes)
         # Return the populated graph
         return self.G
