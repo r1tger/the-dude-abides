@@ -102,6 +102,7 @@ hr {
 .content {
     margin: 2rem;
     color: #000;
+    flex: 70%;
 }
 
 .navigation {

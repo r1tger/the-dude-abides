@@ -449,10 +449,13 @@ class Zettelkasten(object):
         days_to = (next_birthday - t).days
         # Days since COVID started in NL
         days_covid = (t - date.fromisoformat('2020-02-27')).days
+        # Days till Hacker Hotel 2022
+        days_hh = (date.fromisoformat('2022-02-11') - t).days
         # Suggestions
         contents = Note.render('today.md.tpl', days_from=days_from,
                                days_to=days_to, milestone=milestone,
-                               days_covid=days_covid, stats=self.get_stats(),
+                               days_covid=days_covid, days_hh=days_hh,
+                               stats=self.get_stats(),
                                inbox=len(self._inbox()),
                                suggestions=self._suggestions(days), days=days,
                                entry_notes=self._entry_notes(),

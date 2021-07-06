@@ -3,15 +3,17 @@ title: "Vandaag"
 date: "{{ date }}"
 ---
 
-{{ days_to }} dagen totdat ik {{ milestone }} ben.
-{{ days_from }} dagen sinds dat ik geboren ben.
-{{ days_covid }} dagen sinds de eerste COVID-besmetting in Nederland.
+{{ '{:,}'.format(days_to) }} dagen totdat ik {{ milestone }} ben.
+{{ '{:,}'.format(days_from) }} dagen sinds dat ik geboren ben.
+
+{{ '{:,}'.format(days_covid) }} dagen sinds de eerste COVID-besmetting in Nederland.
+{{ days_hh }} dagen tot Hacker Hotel 2022
 
 ---
 
-{{ stats.nr_vertices }} *notities*
-{{ stats.nr_edges }} *relaties* (gemiddeld {{ stats.avg_edges }} relaties per notitie)
-{{ stats.word_count }} *woorden*
+{{ '{:,}'.format(stats.nr_vertices) }} *notities*
+{{ '{:,}'.format(stats.nr_edges) }} *relaties* (gemiddeld {{ stats.avg_edges }} relaties per notitie)
+{{ '{:,}'.format(stats.word_count) }} *woorden*
 
 ---
 
