@@ -89,3 +89,11 @@ def test_render(zettelkasten):
 def test_register(zettelkasten):
     """ """
     zettelkasten.register()
+
+
+def test_lint(zettelkasten):
+    zettelkasten.lint()
+
+
+def test_lattice(zettelkasten):
+    zettelkasten.lattice(2)

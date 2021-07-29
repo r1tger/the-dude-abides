@@ -482,6 +482,16 @@ class Zettelkasten(object):
                                date=datetime.utcnow().isoformat())
         return Note(self.md, 0, contents=contents, display_id=False)
 
+    def lint(self):
+        """Perform some basic integrity checks on the Zettelkasten.
+        """
+        G = self.get_graph()
+        edges = list(G.edges())
+        # Find all duplicate relations
+        d = [(s, t) for s, t in edges if (t, s) in edges]
+        for s, t in sorted(d, key=itemgetter(0)):
+            log.info(f'{s.get_id()}. {s} -> {t.get_id()}. {t}')
+
     def render(self):
         """Get all Notes in the Zettelkasten, including a list of referring
         Notes for each Note.

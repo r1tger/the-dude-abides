@@ -160,6 +160,15 @@ def today(zk, birthday, days):
 
 
 @main.command()
+@pass_zk
+def lint(zk):
+    """
+    """
+    log.info('Finding reciprocal relations ...')
+    zk.lint()
+
+
+@main.command()
 @argument('v', type=INT)
 @pass_zk
 def lattice(zk, v):
