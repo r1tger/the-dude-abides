@@ -10,7 +10,7 @@ from itertools import groupby
 from operator import itemgetter
 from statistics import mean
 from random import sample
-# from pprint import pprint
+from pprint import pprint
 
 from markdown_it import MarkdownIt
 from markdown_it.extensions.footnote import footnote_plugin
@@ -92,21 +92,17 @@ class Zettelkasten(object):
         resolved between vertex v and each vertex listed in t. The result is
         added to the output.
 
-        :s:
-        :t:
-        :returns: tuple of tuple (ref, Note), dictionary of paths
+        :s: note to retrieve referring notes for
+        :t: list of notes to resolve paths to from note s
+        :returns: tuple of tuple (ref, Note), tuple (ref, Note, paths)
 
         """
-        exit_notes = [v for _, v in self._exit_notes()]
-        if s in exit_notes:
-            return []
         G = self.get_graph()
-        # Add direct predecessors, if a predecessor is not an exit Note
-        notes_to = [(G.in_degree(n), n, []) for n in G.predecessors(s)
-                    if n not in exit_notes]
+        notes_to = list(G.predecessors(s))
+        lattices = []
         for n in t:
             # If no path exists between the source and target, skip
-            if not nx.has_path(G, n, s):
+            if not nx.has_path(G, n, s) or s is n or n in notes_to:
                 continue
             # Add all paths to target notes
             paths = []
@@ -114,8 +110,9 @@ class Zettelkasten(object):
                 # TODO: don't generate html filename here, use template
                 paths.append(['%2F{}.html'.format(p.get_id())
                               for p in path[::-1]])
-            notes_to.append((G.in_degree(n), n, paths))
-        return sorted(notes_to, key=itemgetter(0), reverse=True)
+            lattices.append((G.in_degree(n), n, paths))
+        return (self._get_notes(notes_to), sorted(lattices, key=itemgetter(0),
+                                                  reverse=True))
 
     def get_notes_date(self, date, attr=NOTE_MDATE):
         """ """
@@ -493,13 +490,13 @@ class Zettelkasten(object):
 
         """
         G = self.get_graph()
-        exit_notes = [u for b, u in self._exit_notes()]
+        exit_notes = [u for _, u in self._exit_notes()]
         # Write all Notes to disk
         for n in G.nodes():
-            notes_to = self.get_notes_to(n, exit_notes)
+            notes_to, lattices = self.get_notes_to(n, exit_notes)
             # Render contents with references as a new Note
             note = Note(self.md, n.get_id(), contents=Note.render(
                         'note.md.tpl', ident=n.get_id(),
                         contents=n.get_contents(), notes_to=notes_to,
-                        exit_notes=exit_notes))
+                        lattices=lattices, exit_notes=exit_notes))
             yield(note)
