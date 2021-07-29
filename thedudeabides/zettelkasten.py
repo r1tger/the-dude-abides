@@ -489,8 +489,12 @@ class Zettelkasten(object):
         edges = list(G.edges())
         # Find all duplicate relations
         d = [(s, t) for s, t in edges if (t, s) in edges]
+        out = []
         for s, t in sorted(d, key=itemgetter(0)):
+            if (t, s) in out:
+                continue
             log.info(f'{s.get_id()}. {s} -> {t.get_id()}. {t}')
+            out.append((s, t))
 
     def render(self):
         """Get all Notes in the Zettelkasten, including a list of referring
