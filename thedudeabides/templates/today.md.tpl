@@ -7,7 +7,11 @@ date: "{{ date }}"
 {{ '{:,}'.format(days_from) }} dagen sinds dat ik geboren ben.
 
 {{ '{:,}'.format(days_covid) }} dagen sinds de eerste COVID-besmetting in Nederland.
+
+---
+
 {{ days_hh }} dagen tot Hacker Hotel 2022
+{{ days_mch }} dagen tot May Contain Hackers (MCH2022)
 
 ---
 
