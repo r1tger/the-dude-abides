@@ -491,7 +491,7 @@ class Zettelkasten(object):
         d = [(s, t) for s, t in edges if (t, s) in edges]
         out = []
         for s, t in sorted(d, key=itemgetter(0)):
-            if (t, s) in out:
+            if (t, s) in out or s.is_entry() or t.is_entry():
                 continue
             log.info(f'{s.get_id()}. {s} -> {t.get_id()}. {t}')
             out.append((s, t))
