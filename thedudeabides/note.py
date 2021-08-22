@@ -38,7 +38,11 @@ class Note(object):
         self.front_matter = None
         # Parsed contents
         self.md = md
-        self.T = self.md.parse(self.get_body())
+        env = {}
+        self.T = self.md.parse(self.get_body(), env=env)
+        # Extract wordcount and stripped body
+        self.wordcount = env['wordcount']['words']
+        self.plaintext = ' '.join(env['wordcount']['text'])
 
     def __eq__(self, other):
         """Compare Note instances by unique identifier.
@@ -80,6 +84,14 @@ class Note(object):
 
         """
         return self.contents.content
+
+    def get_plaintext(self):
+        """Get the plaintext (no Markdown) of the note.
+
+        :returns: body of Note (plaintext)
+
+        """
+        return self.plaintext
 
     def get_id(self):
         """Get the unique identifier for the Note.
@@ -164,7 +176,7 @@ class Note(object):
 
     def get_word_count(self):
         """ Quick & dirty way to get word count """
-        return len(self.get_body().split())
+        return self.wordcount
 
     def is_entry(self):
         """Is this Note an entry Note into the Zettelkasten?

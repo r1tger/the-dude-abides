@@ -14,6 +14,7 @@ from pprint import pprint
 
 from markdown_it import MarkdownIt
 from mdit_py_plugins.footnote import footnote_plugin
+from mdit_py_plugins.wordcount import wordcount_plugin
 
 import logging
 log = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ class Zettelkasten(object):
         self.zettelkasten = zettelkasten
         self.G = None
         # Set up Markdown parser
-        self.md = MarkdownIt('default').use(footnote_plugin)
+        self.md = MarkdownIt('default').use(footnote_plugin).use(wordcount_plugin, store_text=True)
         self.md.add_render_rule('link_open', Zettelkasten.render_link_open)
 
     @staticmethod
@@ -287,7 +288,7 @@ class Zettelkasten(object):
         inverted_index = {}
         for n in G.nodes():
             # Tokenise body ()
-            tokens = set([t.lower() for t in n.get_body().split()
+            tokens = set([t.lower() for t in n.get_plaintext().split()
                           if t.isalnum() and len(t) > 3 and
                           t.lower() not in exclude])
             # Add to inverted index
@@ -295,6 +296,7 @@ class Zettelkasten(object):
                 if t not in inverted_index:
                     inverted_index[t] = []
                 inverted_index[t].append(n)
+        log.info(f'{len(inverted_index)} terms in inverted index')
         content = Note.render('search.html.tpl',
                               inverted_index=inverted_index,
                               date=datetime.utcnow().isoformat())
