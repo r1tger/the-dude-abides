@@ -151,7 +151,8 @@ class Note(object):
             for t in c:
                 if t.type == 'link_open':
                     try:
-                        href = int(t.attrs[t.attrIndex('target')][1])
+                        # pprint(t.attrs)
+                        href = int(t.attrs['href'])
                         internal_link = True
                     except ValueError:
                         # Special case: not an internal link

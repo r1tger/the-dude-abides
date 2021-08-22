@@ -98,6 +98,8 @@ function fetchNote(href, level, animate=true) {
 }
 
 function search(searchField) {
+    if (!searchField)
+        return;
     // Attach an event listener to the search field
     searchField.addEventListener("keyup", function (e) {
         if (e.ctrlKey && e.metaKey)

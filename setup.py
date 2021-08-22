@@ -13,6 +13,7 @@ setup(
         'click',
         'jinja2',
         'markdown-it-py',
+        'mdit-py-plugins',
         'networkx',
         'python-frontmatter'
     ],

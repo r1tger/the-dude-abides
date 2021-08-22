@@ -13,7 +13,7 @@ from random import sample
 from pprint import pprint
 
 from markdown_it import MarkdownIt
-from markdown_it.extensions.footnote import footnote_plugin
+from mdit_py_plugins.footnote import footnote_plugin
 
 import logging
 log = logging.getLogger(__name__)
@@ -48,11 +48,10 @@ class Zettelkasten(object):
     @staticmethod
     def render_link_open(instance, tokens, idx, options, env):
         """Change any links to include '.html'. """
-        ai = tokens[idx].attrIndex('target')
         try:
             # If the target is an int, convert to point to an HTML file
-            target = '{t}.html'.format(t=int(tokens[idx].attrs[ai][1]))
-            tokens[idx].attrs[ai][1] = target
+            target = '{t}.html'.format(t=int(tokens[idx].attrs['href']))
+            tokens[idx].attrs['href'] = target
         except ValueError:
             # Use target as-is (don't break other links)
             pass
