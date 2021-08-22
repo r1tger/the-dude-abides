@@ -17,9 +17,10 @@
             <ul class="navigation-list">
                 <li class="navigation-item"><a class="navigation-link" href="index.html">Index</a></li>
                 <li class="navigation-item"><a class="navigation-link" href="register.html">Register</a></li>
+                <li class="navigation-item"><a class="navigation-link" href="search.html">Zoeken</a></li>
+                <!--<li class="navigation-item"><a class="navigation-link" href="tags.html">Tags</a></li>-->
                 <li class="navigation-item"><a class="navigation-link" href="https://sive.rs/books" target="_blank">Book notes&hellip;</a></li>
                 <li class="navigation-item"><a class="navigation-link" href="https://rr.reuser.biz" target="_blank">OSINT&hellip;</a></li>
-                <!--<li class="navigation-item"><a class="navigation-link" href="tags.html">Tags</a></li>-->
             </ul>
         </nav>
         <div class="grid-container">

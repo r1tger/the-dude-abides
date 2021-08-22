@@ -149,7 +149,7 @@ class Zettelkasten(object):
             for text, v in note.get_links():
                 try:
                     # Add edge, include link text for reference in register
-                    self.G.add_edge(note, self.get_note(v), text=text)
+                    self.G.add_edge(note, self.get_note(v), label=text)
                 except ValueError as e:
                     log.error(f'While processing note "{note.get_id()}": {e}')
         # Update edges to combined in_degree as weight
@@ -275,6 +275,33 @@ class Zettelkasten(object):
         return self._get_notes([note for note, in_degree, out_degree in notes
                                 if in_degree == 0 and out_degree == 0])
 
+    def inverted_index(self):
+        """
+        """
+        G = self.get_graph()
+        # Quick indexing on document level
+        exclude = ['de', 'het', 'een', 'één', 'zijn', 'hebben', 'doen', 'naar',
+                   'nemen', 'niet', 'omdat', 'over', 'tussen', 'onder', 'twee',
+                   'vanuit', 'veel', 'volgende', 'voor', 'achter', 'wanneer',
+                   'welke', 'worden', 'wordt', 'zelf', 'zich', 'zonder',
+                   'andere']
+        inverted_index = {}
+        for n in G.nodes():
+            # Tokenise body ()
+            tokens = set([t.lower() for t in n.get_body().split()
+                          if t.isalnum() and len(t) > 3 and
+                          t.lower() not in exclude])
+            # Add to inverted index
+            for t in tokens:
+                if t not in inverted_index:
+                    inverted_index[t] = []
+                inverted_index[t].append(n)
+        content = Note.render('search.html.tpl',
+                              inverted_index=inverted_index,
+                              date=datetime.utcnow().isoformat())
+        return Note.render('note.html.tpl', title='Zoeken',
+                           display_id=False, ident=0, content=content)
+
     def index(self):
         """Create a markdown representation of the index of notes.
 
@@ -297,7 +324,7 @@ class Zettelkasten(object):
         """
         def get_predecessors(G, n):
             # Find all predecessors for a note by incoming edge
-            p = [(u, data['text']) for u, v, data in G.in_edges(n, data=True)]
+            p = [(u, data['label']) for u, v, data in G.in_edges(n, data=True)]
             return sorted(p, key=itemgetter(0))
         G = self.get_graph()
         # Get all notes and sort by first letter
@@ -399,6 +426,21 @@ class Zettelkasten(object):
         G = nx.ego_graph(self.get_graph(), s, depth, center=False)
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
                                 notes=[s] + list(G)))
+
+    def olog(self, s, depth=1):
+        """
+
+        :s: id of Note to use as starting point
+        :depth: radius of nodes from center to include
+        :returns: Note for all collected notes
+
+        """
+        s = self.get_note(s)
+        G = nx.ego_graph(self.get_graph(), s, depth)
+
+        from networkx.drawing.nx_pydot import write_dot
+        # pos = nx.nx_agraph.graphviz_layout(G)
+        write_dot(G, 'thedudeabides.dot')
 
     def _suggestions(self, days):
         """Generate a list of suggestions for recently modified notes.

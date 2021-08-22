@@ -5,7 +5,7 @@ from jinja2 import Environment, PackageLoader
 from pathlib import Path
 from datetime import date
 from frontmatter import load, loads, dumps
-# from pprint import pprint
+from pprint import pprint
 
 import logging
 log = logging.getLogger(__name__)

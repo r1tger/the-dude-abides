@@ -2,6 +2,7 @@
 
 let pages = [window.location.pathname];
 let animationLength = 200;
+let rows = [];
 
 function stackNote(href, level) {
     level = Number(level) || pages.length;
@@ -96,6 +97,31 @@ function fetchNote(href, level, animate=true) {
         });
 }
 
+function search(searchField) {
+    // Attach an event listener to the search field
+    searchField.addEventListener("keyup", function (e) {
+        if (e.ctrlKey && e.metaKey)
+            return;
+        e.preventDefault();
+
+        // Filter value to search on
+        filter = this.value.toLowerCase();
+        if (filter.length < 4)
+            filter = 'f3b87388-984d-479b-bcec-31b67a2256fd';
+        // Populate list of rows once (performance)
+        if (0 == rows.length) {
+            tbody = document.querySelector("#tokens");
+            rows = Array.prototype.slice.call(tbody.querySelectorAll("tr"));
+        }
+        // Hide or show table row based on filter value
+        rows.forEach(async function (tr) {
+            tr.style.display = "none";
+            if (tr.id.toLowerCase().indexOf(filter) > -1)
+                tr.style.display = "";
+        });
+    });
+}
+
 function initializeLinks(page, level) {
     level = level || pages.length;
     links = Array.prototype.slice.call(page.querySelectorAll("a"));
@@ -138,6 +164,7 @@ window.addEventListener("popstate", function (event) {
 
 window.onload = function () {
     initializeLinks(document.querySelector(".page"));
+    search(document.querySelector("#search"));
 
     uri = URI(window.location);
     if (uri.hasQuery("note")) {
