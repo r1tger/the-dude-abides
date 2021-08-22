@@ -218,14 +218,6 @@ class Zettelkasten(object):
         G = self.get_graph()
         return G.has_node(v)
 
-    def _top_notes(self):
-        """Get a top 10 of most referred notes. Based on PageRank. """
-        G = self.get_graph()
-        pr = nx.pagerank(G)
-        notes = [n for n, r in sorted(pr.items(), key=itemgetter(1),
-                 reverse=True)]
-        return self._get_notes(notes[:10])
-
     def _get_notes(self, nodes, sort=True):
         """Create a list of notes n for use in templates.
 
@@ -310,8 +302,7 @@ class Zettelkasten(object):
 
         """
         exit_notes = [u for b, u in self._exit_notes()]
-        contents = Note.render('index.md.tpl', top_notes=self._top_notes(),
-                               entry_notes=self._entry_notes(),
+        contents = Note.render('index.md.tpl', entry_notes=self._entry_notes(),
                                exit_notes=exit_notes,
                                inbox=self._inbox(),
                                date=datetime.utcnow().isoformat())
