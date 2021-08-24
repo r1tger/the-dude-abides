@@ -12,7 +12,7 @@
     </thead>
     <tbody id="tokens">
     {% for token, notes in inverted_index.items()|sort %}
-        <tr style="display: none;" id="{{ token }}">
+        <tr style="display: none;" id="row-{{ token }}">
             <td>{{ token }}</td>
             <td>{% for n in notes|sort %}<a href="{{ n.get_id()}}.html" title="{{ n.get_title() }}">{{ n.get_id()}}</a>{% if not loop.last %}, {% endif %}{% endfor %}</td>
         </tr>

@@ -107,7 +107,7 @@ function search(searchField) {
         e.preventDefault();
 
         // Filter value to search on
-        filter = this.value.toLowerCase();
+        filter = "row-" + this.value.toLowerCase();
         if (filter.length < 4)
             filter = 'f3b87388-984d-479b-bcec-31b67a2256fd';
         // Populate list of rows once (performance)

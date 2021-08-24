@@ -11,6 +11,7 @@ from operator import itemgetter
 from statistics import mean
 from random import sample
 from pprint import pprint
+from re import findall
 
 from markdown_it import MarkdownIt
 from mdit_py_plugins.footnote import footnote_plugin
@@ -279,9 +280,9 @@ class Zettelkasten(object):
                    'andere']
         inverted_index = {}
         for n in G.nodes():
-            # Tokenise body ()
-            tokens = set([t.lower() for t in n.get_plaintext().split()
-                          if t.isalnum() and len(t) > 3 and
+            # Tokenise body of Note
+            plaintext = findall(r'\w+', n.get_plaintext())
+            tokens = set([t.lower() for t in plaintext if len(t) > 3 and
                           t.lower() not in exclude])
             # Add to inverted index
             for t in tokens:
