@@ -88,32 +88,67 @@ class Zettelkasten(object):
                     continue
                 yield(Note(self.md, v, join(root, name)))
 
-    def get_notes_to(self, s, t):
+    def _get_path(self, s, t):
+        """Find the shortest path between two vertices and create an HTML path.
+
+        :s: source note
+        :t: target note
+        :returns: list of HTML filenames
+
+        """
+        G = self.get_graph()
+        paths = []
+        for path in nx.all_shortest_paths(G, s, t, weight='weight'):
+            # TODO: don't generate html filename here, use template
+            paths.append(['%2F{}.html'.format(p.get_id())
+                          for p in path[::-1]])
+        return paths
+
+    def get_notes_from(self, v, entry_notes):
+        """Create a lattice from any entry note that has a path to Note v. If
+        multiple lattices are found, all lattices are displayed.
+
+        :v: ID of Note to find lattices for
+        :entry_notes: list of notes to resolve paths from
+        :returns: Note containing lattices
+
+        """
+        s = self.get_note(v)
+        G = self.get_graph()
+        lattices = []
+        for t in entry_notes:
+            if not nx.has_path(G, s, t) or s is t:
+                continue
+            lattices.append((G.in_degree(t), t, self._get_path(s, t)))
+        return sorted(lattices, key=itemgetter(0), reverse=True)
+
+    def get_notes_to(self, s, exit_notes, entry_notes):
         """Get all Notes that refer to Note v. If list t is provided, paths are
         resolved between vertex v and each vertex listed in t. The result is
         added to the output.
 
         :s: note to retrieve referring notes for
-        :t: list of notes to resolve paths to from note s
+        :exit_notes: list of notes to resolve paths to from note s
+        :entry_notes: list of entry notes
         :returns: tuple of tuple (ref, Note), tuple (ref, Note, paths)
 
         """
         G = self.get_graph()
         notes_to = list(G.predecessors(s))
         lattices = []
-        for n in t:
-            # If no path exists between the source and target, skip
-            if not nx.has_path(G, n, s) or s is n or n in notes_to:
+        found = set()
+
+        for t in sorted(exit_notes, reverse=True):
+            if not nx.has_path(G, t, s) or t in notes_to or s is t:
                 continue
+            # Find all entry notes that have a path to t
+            notes = set([n for n in entry_notes if nx.has_path(G, t, n)])
+            if len(notes - found) == 0:
+                continue
+            found |= notes
             # Add all paths to target notes
-            paths = []
-            for path in nx.all_shortest_paths(G, n, s, weight='weight'):
-                # TODO: don't generate html filename here, use template
-                paths.append(['%2F{}.html'.format(p.get_id())
-                              for p in path[::-1]])
-            lattices.append((G.in_degree(n), n, paths))
-        return (self._get_notes(notes_to), sorted(lattices, key=itemgetter(0),
-                                                  reverse=True))
+            lattices.append((G.in_degree(t), t, self._get_path(t, s)))
+        return sorted(lattices, key=itemgetter(0), reverse=True)
 
     def get_notes_date(self, date, attr=NOTE_MDATE):
         """ """
@@ -125,6 +160,11 @@ class Zettelkasten(object):
     def get_filename(self, v):
         """Create a filename based on Note ID. """
         return(join(self.zettelkasten, f'{v}.{EXT_NOTE}'))
+
+    def count(self):
+        """ """
+        G = self.get_graph()
+        return len(G.nodes())
 
     def get_graph(self):
         """Create a directed graph, using each Note as a vertex and the
@@ -420,21 +460,6 @@ class Zettelkasten(object):
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
                                 notes=[s] + list(G)))
 
-    def olog(self, s, depth=1):
-        """
-
-        :s: id of Note to use as starting point
-        :depth: radius of nodes from center to include
-        :returns: Note for all collected notes
-
-        """
-        s = self.get_note(s)
-        G = nx.ego_graph(self.get_graph(), s, depth)
-
-        from networkx.drawing.nx_pydot import write_dot
-        # pos = nx.nx_agraph.graphviz_layout(G)
-        write_dot(G, 'thedudeabides.dot')
-
     def _suggestions(self, days):
         """Generate a list of suggestions for recently modified notes.
         Suggested notes are not part of the (multiple) train of thought(s) the
@@ -539,13 +564,18 @@ class Zettelkasten(object):
 
         """
         G = self.get_graph()
-        exit_notes = [u for _, u in self._exit_notes()]
+        # exit_notes = sorted([u for _, u in self._exit_notes()], reverse=True)
+        entry_notes = sorted([u for _, u in self._entry_notes()], reverse=True)
+        exit_notes = sorted([u for _, u in self._exit_notes()], reverse=True)
         # Write all Notes to disk
         for n in G.nodes():
-            notes_to, lattices = self.get_notes_to(n, exit_notes)
+            notes_to = self._get_notes(G.predecessors(n))
+            lattices_to = self.get_notes_to(n, exit_notes, entry_notes)
+            lattices_from = self.get_notes_from(n, entry_notes)
             # Render contents with references as a new Note
             note = Note(self.md, n.get_id(), contents=Note.render(
                         'note.md.tpl', ident=n.get_id(),
                         contents=n.get_contents(), notes_to=notes_to,
-                        lattices=lattices, exit_notes=exit_notes))
+                        lattices_to=lattices_to, lattices_from=lattices_from,
+                        exit_notes=exit_notes))
             yield(note)

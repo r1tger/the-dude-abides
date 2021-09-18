@@ -4,7 +4,7 @@
 from .zettelkasten import Zettelkasten
 
 from click import (option, Path, pass_context, group, argument,
-                   make_pass_decorator, INT)
+                   make_pass_decorator, progressbar, INT)
 from os import environ
 from os.path import join
 # from pprint import pprint
@@ -88,24 +88,6 @@ def successors(zk, v, depth):
 
 
 @main.command()
-@argument('v', type=INT)
-@option('--depth', type=INT, default=99)
-@pass_zk
-def olog(zk, v, depth):
-    """Collect associated notes by ID.
-
-    The provided ID is treated as the endpoint with all notes retrieved up
-    until all starting points.
-    """
-    try:
-        log.info('Collecting note "{v}"'.format(v=v))
-        zk.olog(v, depth)
-        # edit_note(zk.successors(v, depth))
-    except ValueError as e:
-        log.error(e)
-
-
-@main.command()
 @argument('title')
 @pass_zk
 def create(zk, title):
@@ -148,11 +130,13 @@ def render(zk, output):
     """Render all notes as HTML.
     """
     log.info('Rendering notes to "{d}"'.format(d=output))
-    for note in zk.render():
-        # Write to disk
-        filename = join(output, '{v}.html'.format(v=note.get_id()))
-        with open(filename, 'w') as f:
-            f.write(note.to_html())
+    with progressbar(zk.render(), length=zk.count(),
+                     label='Rendering notes') as bar:
+        for note in bar:
+            # Write to disk
+            filename = join(output, '{v}.html'.format(v=note.get_id()))
+            with open(filename, 'w') as f:
+                f.write(note.to_html())
     # Write the index to disk
     with open(join(output, 'index.html'), 'w') as f:
         f.write(zk.index().to_html())
