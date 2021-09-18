@@ -9,7 +9,7 @@ from datetime import datetime, date, timedelta
 from itertools import groupby
 from operator import itemgetter
 from statistics import mean
-from random import sample
+from random import sample, shuffle
 from pprint import pprint
 from re import findall
 
@@ -43,6 +43,7 @@ class Zettelkasten(object):
             raise ValueError('Invalid Zettelkasten directory provided')
         self.zettelkasten = zettelkasten
         self.G = None
+        self.N = {}
         # Set up Markdown parser
         self.md = MarkdownIt('default').use(footnote_plugin).use(wordcount_plugin, store_text=True)
         self.md.add_render_rule('link_open', Zettelkasten.render_link_open)
@@ -138,14 +139,19 @@ class Zettelkasten(object):
         lattices = []
         found = set()
 
-        for t in sorted(exit_notes, reverse=True):
+        # Shuffle the exit notes to add an element of surprise
+        shuffle(exit_notes)
+        # for t in sorted(exit_notes, reverse=True):
+        for t in exit_notes:
             if not nx.has_path(G, t, s) or t in notes_to or s is t:
                 continue
-            # Find all entry notes that have a path to t
-            notes = set([n for n in entry_notes if nx.has_path(G, t, n)])
-            if len(notes - found) == 0:
+            # Find all entry notes that have a path to t (cache result)
+            if t not in self.N:
+                self.N[t] = set([n for n in entry_notes
+                                 if nx.has_path(G, t, n)])
+            if len(self.N[t] - found) == 0:
                 continue
-            found |= notes
+            found |= self.N[t]
             # Add all paths to target notes
             lattices.append((G.in_degree(t), t, self._get_path(t, s)))
         return sorted(lattices, key=itemgetter(0), reverse=True)
