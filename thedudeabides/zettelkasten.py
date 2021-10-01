@@ -123,7 +123,7 @@ class Zettelkasten(object):
             lattices.append((G.in_degree(t), t, self._get_path(s, t)))
         return sorted(lattices, key=itemgetter(0), reverse=True)
 
-    def get_notes_to(self, s, exit_notes, entry_notes):
+    def get_notes_to(self, s, exit_notes, entry_notes, no_random=False):
         """Get all Notes that refer to Note v. If list t is provided, paths are
         resolved between vertex v and each vertex listed in t. The result is
         added to the output.
@@ -139,8 +139,9 @@ class Zettelkasten(object):
         lattices = []
         found = set()
 
-        # Shuffle the exit notes to add an element of surprise
-        shuffle(exit_notes)
+        if not no_random:
+            # Shuffle the exit notes to add an element of surprise
+            shuffle(exit_notes)
         # for t in sorted(exit_notes, reverse=True):
         for t in exit_notes:
             if not nx.has_path(G, t, s) or t in notes_to or s is t:
@@ -562,7 +563,7 @@ class Zettelkasten(object):
             log.info(f'{s.get_id()}. {s} -> {t.get_id()}. {t}')
             out.append((s, t))
 
-    def render(self):
+    def render(self, no_random=False):
         """Get all Notes in the Zettelkasten, including a list of referring
         Notes for each Note.
 
@@ -576,7 +577,8 @@ class Zettelkasten(object):
         # Write all Notes to disk
         for n in G.nodes():
             notes_to = self._get_notes(G.predecessors(n))
-            lattices_to = self.get_notes_to(n, exit_notes, entry_notes)
+            lattices_to = self.get_notes_to(n, exit_notes, entry_notes,
+                                            no_random)
             lattices_from = self.get_notes_from(n, entry_notes)
             # Render contents with references as a new Note
             note = Note(self.md, n.get_id(), contents=Note.render(

@@ -4,7 +4,7 @@
 from .zettelkasten import Zettelkasten
 
 from click import (option, Path, pass_context, group, argument,
-                   make_pass_decorator, progressbar, INT)
+                   make_pass_decorator, progressbar, INT, BOOL)
 from os import environ
 from os.path import join
 # from pprint import pprint
@@ -125,12 +125,14 @@ def index(zk):
 
 @main.command()
 @argument('output', type=Path(exists=True, dir_okay=True, resolve_path=True))
+# @argument('norandom', default=False, type=INT)
+@option('--no-random', is_flag=True, default=False, help='disable random')
 @pass_zk
-def render(zk, output):
+def render(zk, output, no_random):
     """Render all notes as HTML.
     """
     log.info('Rendering notes to "{d}"'.format(d=output))
-    with progressbar(zk.render(), length=zk.count(),
+    with progressbar(zk.render(no_random), length=zk.count(),
                      label='Rendering notes') as bar:
         for note in bar:
             # Write to disk
