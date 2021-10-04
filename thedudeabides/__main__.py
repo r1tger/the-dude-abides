@@ -126,7 +126,8 @@ def index(zk):
 @main.command()
 @argument('output', type=Path(exists=True, dir_okay=True, resolve_path=True))
 # @argument('norandom', default=False, type=INT)
-@option('--no-random', is_flag=True, default=False, help='disable random')
+@option('--no-random', is_flag=True, default=False,
+        help='Disable generation of random lattices.')
 @pass_zk
 def render(zk, output, no_random):
     """Render all notes as HTML.

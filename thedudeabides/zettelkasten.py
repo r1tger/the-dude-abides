@@ -350,7 +350,8 @@ class Zettelkasten(object):
 
         """
         exit_notes = [u for b, u in self._exit_notes()]
-        contents = Note.render('index.md.tpl', entry_notes=self._entry_notes(),
+        contents = Note.render('index.md.tpl', title='Notities',
+                               entry_notes=self._entry_notes(),
                                exit_notes=exit_notes,
                                inbox=self._inbox(),
                                date=datetime.utcnow().isoformat())

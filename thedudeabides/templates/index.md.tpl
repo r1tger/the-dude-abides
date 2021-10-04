@@ -1,5 +1,5 @@
 ---
-title: "Ingang"
+title: "{{ title }}"
 date: "{{ date }}"
 ---
 
