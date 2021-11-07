@@ -3,6 +3,7 @@
 from thedudeabides.note import Note
 
 import pytest
+from datetime import date
 
 
 NOTE_01 = """---
@@ -97,3 +98,7 @@ def test_lint(zettelkasten):
 
 def test_lattice(zettelkasten):
     zettelkasten.lattice(2)
+
+
+def test_today(zettelkasten):
+    zettelkasten.today(date.fromisoformat('1983-05-14'))
