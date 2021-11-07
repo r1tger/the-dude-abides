@@ -15,6 +15,14 @@ date: "{{ date }}"
 |Uitgangnotities (Ω)|{{ '{:,}'.format(stats.nr_exit) }}    |{{ stats.nr_exit_perc }}% |
 {% endif %}
 
+## Recent
+
+{% if recent_notes|length == 0 %}Er zijn geen recent bijgewerkte notities.{% endif %}
+
+{% for b, note in recent_notes %}
+* {{ note|format_note(b, exit_notes) }}
+{% endfor %}
+
 {% for k, v in notes %}
 
 ## {{ k }}

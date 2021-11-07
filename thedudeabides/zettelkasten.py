@@ -157,11 +157,12 @@ class Zettelkasten(object):
             lattices.append((G.in_degree(t), t, self._get_path(t, s)))
         return sorted(lattices, key=itemgetter(0), reverse=True)
 
-    def get_notes_date(self, date, attr=NOTE_MDATE):
+    def _get_notes_date(self, days, attr=NOTE_MDATE):
         """ """
         G = self.get_graph()
+        from_date = date.today() - timedelta(days=days)
         # Get all notes from specified data till now
-        notes = [n for n, d in G.nodes(data=True) if d[attr] > date]
+        notes = [n for n, d in G.nodes(data=True) if d[attr] > from_date]
         return self._get_notes(notes)
 
     def get_filename(self, v):
@@ -376,7 +377,7 @@ class Zettelkasten(object):
         for k, group in groupby(notes, key=itemgetter(0)):
             yield((k, sorted(group, key=lambda x: x[2].get_title().upper())))
 
-    def register(self):
+    def register(self, days=3):
         """Create a registry of all notes, sorted by first letter of note
         title.
 
@@ -388,6 +389,7 @@ class Zettelkasten(object):
         contents = Note.render('register.md.tpl', notes=self._register(),
                                stats=self.get_stats(), exit_notes=exit_notes,
                                entry_notes=entry_notes,
+                               recent_notes=self._get_notes_date(days),
                                date=datetime.utcnow().isoformat())
         return Note(self.md, 0, 'Register', contents=contents,
                     display_id=False)
@@ -482,7 +484,7 @@ class Zettelkasten(object):
         """
         G = self.get_graph()
         suggestions = []
-        for b, t in self.get_notes_date(date.today() - timedelta(days=days)):
+        for b, t in self._get_notes_date(days):
             # Find all entry notes that have a path to the sampled note
             entry_notes = [s for _, s in self._entry_notes()
                            if nx.has_path(G, t, s) and s is not t]

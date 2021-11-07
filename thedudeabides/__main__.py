@@ -128,8 +128,10 @@ def index(zk):
 # @argument('norandom', default=False, type=INT)
 @option('--no-random', is_flag=True, default=False,
         help='Disable generation of random lattices.')
+@option('--days', default=3, type=INT,
+        help='Number of days in the past to look for notes.')
 @pass_zk
-def render(zk, output, no_random):
+def render(zk, output, no_random, days):
     """Render all notes as HTML.
     """
     log.info('Rendering notes to "{d}"'.format(d=output))
@@ -145,7 +147,7 @@ def render(zk, output, no_random):
         f.write(zk.index().to_html())
     # Write the register to disk
     with open(join(output, 'register.html'), 'w') as f:
-        f.write(zk.register().to_html())
+        f.write(zk.register(days).to_html())
     # Write the tags to disk
     with open(join(output, 'tags.html'), 'w') as f:
         f.write(zk.tags().to_html())
