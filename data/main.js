@@ -139,9 +139,9 @@ function initializeLinks(page, level) {
                 rawHref.includes(".pdf") ||
                 rawHref.includes(".svg")
             ) &&
-            !rawHref.includes("n=")
+            !rawHref.includes("/n=")
         ) {
-            if (-1 != pages.indexOf(rawHref)) {
+            if (-1 != pages.indexOf("/" + rawHref)) {
                 element.className = "highlight"
             }
             element.addEventListener("click", function (e) {
