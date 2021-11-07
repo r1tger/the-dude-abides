@@ -107,9 +107,9 @@ function search(searchField) {
         e.preventDefault();
 
         // Filter value to search on
-        filter = "row-" + this.value.toLowerCase();
-        if (filter.length < 4)
-            filter = 'f3b87388-984d-479b-bcec-31b67a2256fd';
+        token = this.value.toLowerCase();
+        if (token.length < 3)
+            token = 'f3b87388-984d-479b-bcec-31b67a2256fd';
         // Populate list of rows once (performance)
         if (0 == rows.length) {
             tbody = document.querySelector("#tokens");
@@ -118,7 +118,7 @@ function search(searchField) {
         // Hide or show table row based on filter value
         rows.forEach(async function (tr) {
             tr.style.display = "none";
-            if (tr.id.toLowerCase().indexOf(filter) > -1)
+            if (tr.dataset.token.toLowerCase().indexOf(token) > -1)
                 tr.style.display = "";
         });
     });
