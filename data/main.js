@@ -9,8 +9,8 @@ function stackNote(href, level) {
     href = URI(href);
     uri = URI(window.location);
     stacks = [];
-    if (uri.hasQuery("n")) {
-        stacks = uri.query(true).n;
+    if (uri.hasQuery("note")) {
+        stacks = uri.query(true).note;
         if (!Array.isArray(stacks)) {
             stacks = [stacks];
         }
@@ -21,7 +21,7 @@ function stackNote(href, level) {
         return false;
     }
     stacks.push(href.path());
-    uri.setQuery("n", stacks);
+    uri.setQuery("note", stacks);
 
     old_stacks = stacks.slice(0, level - 1);
     state = { stacks: old_stacks, level: level };
@@ -139,7 +139,7 @@ function initializeLinks(page, level) {
                 rawHref.includes(".pdf") ||
                 rawHref.includes(".svg")
             ) &&
-            !rawHref.includes("/n=")
+            !rawHref.includes("note=")
         ) {
             if (-1 != pages.indexOf("/" + rawHref)) {
                 element.className = "highlight"
@@ -169,8 +169,8 @@ window.onload = function () {
     search(document.querySelector("#search"));
 
     uri = URI(window.location);
-    if (uri.hasQuery("n")) {
-        stacks = uri.query(true).n;
+    if (uri.hasQuery("note")) {
+        stacks = uri.query(true).note;
         if (!Array.isArray(stacks)) {
             stacks = [stacks];
         }
