@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='thedudeabides',
-    version='0.7.3',
+    version='0.7.4',
     description='The dude abides',
     url='https://github.com/r1tger/the-dude-abides',
     author='Ritger Teunissen',
