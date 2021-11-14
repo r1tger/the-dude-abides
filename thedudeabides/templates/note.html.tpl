@@ -7,6 +7,7 @@
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.css">
         <link rel="stylesheet" href="main.css"/>
         <link href="/favicon.ico" rel="shortcut icon"/>
         <meta name="description" content="{{ title|e }}"/>
@@ -30,10 +31,26 @@
                         <h1>{% if display_id %}{{ ident }}. {% endif %}{{ title }}</h1>
                         {{ content }}
                     </div>
+                    {% if display_graph %}
+                    <div class="content">
+                        <h2>Netwerk</h2>
+                        <div class="network"></div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </body>
+    {% if display_graph %}
+    <!-- Nodes/edges for network -->
+    <script type="text/json" class="nodes">
+        {{ nodes }}
+    </script>
+    <script type="text/json" class="edges">
+        {{ edges }}
+    </script>
+    {% endif %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/URI.js/1.19.6/URI.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js"></script>
     <script src="main.js" type="text/javascript"></script>
 </html>

@@ -45,6 +45,7 @@ function displayNote(href, text, level, animate=true) {
     let container = document.querySelector(".grid");
     let fragment = document.createElement("template");
     fragment.innerHTML = text;
+
     let element = fragment.content.querySelector(".page");
     container.appendChild(element);
     pages.push(URI(href).path());
@@ -53,6 +54,8 @@ function displayNote(href, text, level, animate=true) {
         function (element, level) {
             element.dataset.level = level + 1;
             initializeLinks(element, level + 1);
+            displayNetwork(element, fragment.content);
+            // Load network
             element.scrollIntoView();
             if (animate) {
                 element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
@@ -60,6 +63,52 @@ function displayNote(href, text, level, animate=true) {
         }.bind(null, element, level),
         10
     );
+}
+
+function displayNetwork(page, content) {
+    // Render a directed graph using vis-network
+    var options = {
+        autoResize: true,
+        width: '100%',
+        height: '100%',
+        nodes: {
+            shape: "circle",
+            size: 16,
+            shadow: true,
+        },
+        edges: {
+            arrows: 'to'
+        },
+        physics: {
+            forceAtlas2Based: {
+                gravitationalConstant: -26,
+                centralGravity: 0.005,
+                springLength: 230,
+                springConstant: 0.18,
+            },
+            maxVelocity: 146,
+            solver: "forceAtlas2Based",
+            timestep: 0.35,
+            stabilization: { iterations: 150 },
+        },
+    };
+    let network = new vis.Network(
+        page.querySelector('.network'),
+        {
+            nodes: JSON.parse(content.querySelector(".nodes").text),
+            edges: JSON.parse(content.querySelector(".edges").text)
+        },
+        options
+    );
+    network.level = page.dataset.level;
+    network.on('doubleClick', function(params) {
+        if (0 == params.nodes.length)
+            return;
+        href = '/' + params.nodes[0] + '.html';
+        if (stackNote(href, this.level)) {
+            fetchNote(href, this.level, (animate=true));
+        }
+    });
 }
 
 function fetchNotes(hrefs) {

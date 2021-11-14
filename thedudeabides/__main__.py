@@ -141,7 +141,7 @@ def render(zk, output, no_random, days):
             # Write to disk
             filename = join(output, '{v}.html'.format(v=note.get_id()))
             with open(filename, 'w') as f:
-                f.write(note.to_html())
+                f.write(zk.to_html(note))
     # Write the index to disk
     with open(join(output, 'index.html'), 'w') as f:
         f.write(zk.index().to_html())

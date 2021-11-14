@@ -12,6 +12,7 @@ from statistics import mean
 from random import sample, shuffle
 from pprint import pprint
 from re import findall
+from json import dumps
 
 from markdown_it import MarkdownIt
 from mdit_py_plugins.footnote import footnote_plugin
@@ -590,3 +591,36 @@ class Zettelkasten(object):
                         lattices_to=lattices_to, lattices_from=lattices_from,
                         exit_notes=exit_notes))
             yield(note)
+
+    def _get_vis_js(self, G, note, depth=1):
+        """ """
+        ego = nx.ego_graph(G, note, depth, undirected=True)
+        nodes = []
+        for node in ego.nodes():
+            n = {'id': node.get_id(), 'title': node.get_title(),
+                 'label': str(node.get_id()), 'value': G.in_degree(node)}
+            if node == note:
+                n['color'] = '#d81e05'
+            nodes.append(n)
+        edges = []
+        for f, t in ego.edges():
+            edges.append({'from': f.get_id(), 'to': t.get_id()})
+        return (nodes, edges)
+
+    def to_html(self, note):
+        """Convert a Note to HTML.
+
+        Creates all nodes and edges for vis-network.js:
+            https://visjs.github.io/vis-network/docs/network/
+
+        :note: Note to convert to HTML
+        :returns: HTML content
+
+        """
+        G = self.get_graph()
+        nodes, edges = self._get_vis_js(G, note)
+        return Note.render('note.html.tpl', title=note.get_title(),
+                           display_id=note.display_id, ident=note.get_id(),
+                           nodes=dumps(nodes), edges=dumps(edges),
+                           display_graph=True,
+                           content=self.md.render(note.get_body()))
