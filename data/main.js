@@ -75,6 +75,13 @@ function displayNetwork(page, content) {
             shape: "circle",
             size: 16,
             shadow: true,
+            scaling: {
+                customScalingFunction: function (min, max, total, value) {
+                    return value / total;
+                },
+                min: 0,
+                max: 30
+            },
         },
         edges: {
             arrows: 'to'
@@ -92,11 +99,13 @@ function displayNetwork(page, content) {
             stabilization: { iterations: 150 },
         },
     };
+    nodes = JSON.parse(content.querySelector(".nodes").text);
+    edges = JSON.parse(content.querySelector(".edges").text);
     let network = new vis.Network(
         page.querySelector('.network'),
         {
-            nodes: JSON.parse(content.querySelector(".nodes").text),
-            edges: JSON.parse(content.querySelector(".edges").text)
+            nodes: nodes,
+            edges: edges
         },
         options
     );
