@@ -72,13 +72,9 @@ function displayNetwork(page, content) {
         width: '100%',
         height: '100%',
         nodes: {
-            shape: "circle",
-            size: 16,
+            shape: "circle",    // dot
             shadow: true,
             scaling: {
-                customScalingFunction: function (min, max, total, value) {
-                    return value / total;
-                },
                 min: 0,
                 max: 30
             },
