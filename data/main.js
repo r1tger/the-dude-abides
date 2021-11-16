@@ -6,7 +6,6 @@ let rows = [];
 
 function stackNote(href, level) {
     level = Number(level) || pages.length;
-    href = URI(href);
     uri = URI(window.location);
     stacks = [];
     if (uri.hasQuery("note")) {
@@ -16,10 +15,9 @@ function stackNote(href, level) {
         }
         stacks = stacks.slice(0, level - 1);
     }
-    if (-1 != stacks.indexOf(href.path())) {
-        // If href is already in stack, do not open again
+    // If href is already in stack, do not open again
+    if (-1 != stacks.indexOf(href.path()))
         return false;
-    }
     stacks.push(href.path());
     uri.setQuery("note", stacks);
 
@@ -48,13 +46,13 @@ function displayNote(href, text, level, animate=true) {
 
     let element = fragment.content.querySelector(".page");
     container.appendChild(element);
-    pages.push(URI(href).path());
+    pages.push(href.path());
 
     setTimeout(
         function (element, level) {
             element.dataset.level = level + 1;
             initializeLinks(element, level + 1);
-            displayNetwork(element, fragment.content);
+            displayNetwork(element);
             // Load network
             element.scrollIntoView();
             if (animate) {
@@ -65,7 +63,9 @@ function displayNote(href, text, level, animate=true) {
     );
 }
 
-function displayNetwork(page, content) {
+function displayNetwork(page) {
+    if (!page.querySelector('.network'))
+        return;
     // Render a directed graph using vis-network
     var options = {
         autoResize: true,
@@ -95,8 +95,8 @@ function displayNetwork(page, content) {
             stabilization: { iterations: 150 },
         },
     };
-    nodes = JSON.parse(content.querySelector(".nodes").text);
-    edges = JSON.parse(content.querySelector(".edges").text);
+    nodes = JSON.parse(page.querySelector(".nodes").text);
+    edges = JSON.parse(page.querySelector(".edges").text);
     let network = new vis.Network(
         page.querySelector('.network'),
         {
@@ -109,7 +109,7 @@ function displayNetwork(page, content) {
     network.on('doubleClick', function(params) {
         if (0 == params.nodes.length)
             return;
-        href = '/' + params.nodes[0] + '.html';
+        href = URI('/' + params.nodes[0] + '.html');
         if (stackNote(href, this.level)) {
             fetchNote(href, this.level, (animate=true));
         }
@@ -132,7 +132,7 @@ function fetchNotes(hrefs) {
                 count = count - 1;
                 if (0 === count) {
                     results.forEach(function(text, index) {
-                        displayNote(hrefs[index], text, index + 1);
+                        displayNote(URI(hrefs[index]), text, index + 1);
                     });
                 }
             });
@@ -142,7 +142,7 @@ function fetchNotes(hrefs) {
 function fetchNote(href, level, animate=true) {
     level = Number(level) || pages.length;
 
-    const request = new Request(href);
+    const request = new Request(href.path());
     fetch(request)
         .then((response) => response.text())
         .then((text) => {
@@ -156,7 +156,7 @@ function search(searchField) {
         return;
     // Attach an event listener to the search field
     searchField.addEventListener("keyup", function (e) {
-        if (e.ctrlKey && e.metaKey)
+        if (e.ctrlKey || e.metaKey)
             return;
         e.preventDefault();
 
@@ -199,14 +199,15 @@ function initializeLinks(page, level) {
                 element.className = "highlight"
             }
             element.addEventListener("click", function (e) {
-                if (!e.ctrlKey && !e.metaKey) {
-                    e.preventDefault();
-                    if (stackNote(element.href, this.dataset.level)) {
-                        fetchNote(element.href, this.dataset.level, (animate=true));
-                    } else {
-                        // blink element
-                        element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
-                    }
+                if (e.ctrlKey || e.metaKey)
+                    return;
+                e.preventDefault();
+                href = URI(element.href);
+                if (stackNote(href, this.dataset.level)) {
+                    fetchNote(href, this.dataset.level, (animate=true));
+                } else {
+                    // blink element
+                    element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
                 }
             });
         }
@@ -221,13 +222,13 @@ window.addEventListener("popstate", function (event) {
 window.onload = function () {
     initializeLinks(document.querySelector(".page"));
     search(document.querySelector("#search"));
+    displayNetwork(document.querySelector(".page"));
 
     uri = URI(window.location);
     if (uri.hasQuery("note")) {
         stacks = uri.query(true).note;
-        if (!Array.isArray(stacks)) {
+        if (!Array.isArray(stacks))
             stacks = [stacks];
-        }
         // Fetch all notes defined in the url
         fetchNotes(stacks);
     }

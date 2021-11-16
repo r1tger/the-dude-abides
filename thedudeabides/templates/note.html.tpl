@@ -36,20 +36,18 @@
                         <h2>Netwerk</h2>
                         <div class="network"></div>
                     </div>
+                    <!-- Nodes/edges for network -->
+                    <script type="text/json" class="nodes">
+                        {{ nodes }}
+                    </script>
+                    <script type="text/json" class="edges">
+                        {{ edges }}
+                    </script>
                     {% endif %}
                 </div>
             </div>
         </div>
     </body>
-    {% if display_graph %}
-    <!-- Nodes/edges for network -->
-    <script type="text/json" class="nodes">
-        {{ nodes }}
-    </script>
-    <script type="text/json" class="edges">
-        {{ edges }}
-    </script>
-    {% endif %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/URI.js/1.19.6/URI.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.js"></script>
     <script src="main.js" type="text/javascript"></script>
