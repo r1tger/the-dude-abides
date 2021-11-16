@@ -102,3 +102,7 @@ def test_lattice(zettelkasten):
 
 def test_today(zettelkasten):
     zettelkasten.today(date.fromisoformat('1983-05-14'))
+
+
+def test_graph(zettelkasten):
+    zettelkasten.vis_js_network()

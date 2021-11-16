@@ -154,6 +154,9 @@ def render(zk, output, no_random, days):
     # Write the search page to disk
     with open(join(output, 'search.html'), 'w') as f:
         f.write(zk.inverted_index())
+    # Write the graph page to disk
+    with open(join(output, 'graph.html'), 'w') as f:
+        f.write(zk.vis_js_network())
     log.info('Completed rendering of notes')
 
 

@@ -345,6 +345,14 @@ class Zettelkasten(object):
         return Note.render('note.html.tpl', title='Zoeken',
                            display_id=False, ident=0, content=content)
 
+    def vis_js_network(self):
+        """ """
+        nodes, edges = self._get_vis_js(self.get_graph())
+        return Note.render('note.html.tpl', title='Netwerk',
+                           display_id=False, display_graph=True, ident=0,
+                           nodes=dumps(nodes, indent=True),
+                           edges=dumps(edges, indent=True))
+
     def index(self):
         """Create a markdown representation of the index of notes.
 
@@ -592,9 +600,11 @@ class Zettelkasten(object):
                         exit_notes=exit_notes))
             yield(note)
 
-    def _get_vis_js(self, G, note, depth=1):
+    def _get_vis_js(self, G, note=False, depth=1):
         """ """
-        ego = nx.ego_graph(G, note, depth, undirected=True)
+        ego = G
+        if note:
+            ego = nx.ego_graph(G, note, depth, undirected=True)
         nodes = []
         for node in ego.nodes():
             n = {'id': node.get_id(), 'title': node.get_title(),
@@ -621,6 +631,7 @@ class Zettelkasten(object):
         nodes, edges = self._get_vis_js(G, note)
         return Note.render('note.html.tpl', title=note.get_title(),
                            display_id=note.display_id, ident=note.get_id(),
-                           nodes=dumps(nodes), edges=dumps(edges),
+                           nodes=dumps(nodes, indent=True),
+                           edges=dumps(edges, indent=True),
                            display_graph=True,
                            content=self.md.render(note.get_body()))
