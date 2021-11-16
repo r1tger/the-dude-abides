@@ -8,7 +8,7 @@ function stackNote(href, level, animate=true) {
     level = Number(level) || pages.length;
     uri = URI(window.location);
     stacks = [];
-    if (uri.hasQuery("note")) {
+    if (uri.hasQuery('note')) {
         stacks = uri.query(true).note;
         if (!Array.isArray(stacks)) {
             stacks = [stacks];
@@ -19,11 +19,11 @@ function stackNote(href, level, animate=true) {
     if (-1 != stacks.indexOf(href.path()))
         return false;
     stacks.push(href.path());
-    uri.setQuery("note", stacks);
+    uri.setQuery('note', stacks);
 
     old_stacks = stacks.slice(0, level - 1);
     state = { stacks: old_stacks, level: level };
-    window.history.pushState(state, "", uri.href());
+    window.history.pushState(state, '', uri.href());
 
     // Fetch note
     const request = new Request(href.path());
@@ -37,23 +37,21 @@ function stackNote(href, level, animate=true) {
 }
 
 function unstackNotes(level) {
-    let container = document.querySelector(".grid");
+    let container = document.querySelector('.grid');
     let children = Array.prototype.slice.call(container.children);
 
-    for (let i = level; i < pages.length; i++) {
+    for (let i = level; i < pages.length; i++)
         container.removeChild(children[i]);
-    }
     pages = pages.slice(0, level);
 }
 
 function displayNote(href, text, level, animate=true) {
-    //
     unstackNotes(level);
-    let container = document.querySelector(".grid");
-    let fragment = document.createElement("template");
+    let container = document.querySelector('.grid');
+    let fragment = document.createElement('template');
     fragment.innerHTML = text;
 
-    let element = fragment.content.querySelector(".page");
+    let element = fragment.content.querySelector('.page');
     container.appendChild(element);
     pages.push(href.path());
 
@@ -81,7 +79,7 @@ function displayNetwork(page) {
         width: '100%',
         height: '100%',
         nodes: {
-            shape: "circle",    // dot
+            shape: 'circle',    // dot
             shadow: true,
             scaling: {
                 min: 0,
@@ -99,13 +97,13 @@ function displayNetwork(page) {
                 springConstant: 0.18,
             },
             maxVelocity: 146,
-            solver: "forceAtlas2Based",
+            solver: 'forceAtlas2Based',
             timestep: 0.35,
             stabilization: { iterations: 150 },
         },
     };
-    nodes = JSON.parse(page.querySelector(".nodes").text);
-    edges = JSON.parse(page.querySelector(".edges").text);
+    nodes = JSON.parse(page.querySelector('.nodes').text);
+    edges = JSON.parse(page.querySelector('.edges').text);
     let network = new vis.Network(
         page.querySelector('.network'),
         {
@@ -150,7 +148,7 @@ function search(searchField) {
     if (!searchField)
         return;
     // Attach an event listener to the search field
-    searchField.addEventListener("keyup", function (e) {
+    searchField.addEventListener('keyup', function (e) {
         if (e.ctrlKey || e.metaKey)
             return;
         e.preventDefault();
@@ -161,38 +159,38 @@ function search(searchField) {
             token = 'f3b87388-984d-479b-bcec-31b67a2256fd';
         // Populate list of rows once (performance)
         if (0 == rows.length) {
-            tbody = document.querySelector("#tokens");
-            rows = Array.prototype.slice.call(tbody.querySelectorAll("tr"));
+            tbody = document.querySelector('#tokens');
+            rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
         }
         // Hide or show table row based on filter value
         rows.forEach(async function (tr) {
-            tr.style.display = "none";
+            tr.style.display = 'none';
             if (tr.dataset.token.toLowerCase().indexOf(token) > -1)
-                tr.style.display = "";
+                tr.style.display = '';
         });
     });
 }
 
 function initializeLinks(page) {
-    links = Array.prototype.slice.call(page.querySelectorAll("a"));
+    links = Array.prototype.slice.call(page.querySelectorAll('a'));
     links.forEach(async function (element) {
-        var rawHref = element.getAttribute("href");
+        var rawHref = element.getAttribute('href');
         element.dataset.level = page.dataset.level;
         if (
             rawHref &&
             !(
-                rawHref.indexOf("http://") === 0 ||
-                rawHref.indexOf("https://") === 0 ||
-                rawHref.indexOf("#") === 0 ||
-                rawHref.includes(".pdf") ||
-                rawHref.includes(".svg")
+                rawHref.indexOf('http://') === 0 ||
+                rawHref.indexOf('https://') === 0 ||
+                rawHref.indexOf('#') === 0 ||
+                rawHref.includes('.pdf') ||
+                rawHref.includes('.svg')
             ) &&
-            !rawHref.includes("note=")
+            !rawHref.includes('note=')
         ) {
-            if (-1 != pages.indexOf("/" + rawHref)) {
-                element.className = "highlight"
+            if (-1 != pages.indexOf('/' + rawHref)) {
+                element.className = 'highlight'
             }
-            element.addEventListener("click", function (e) {
+            element.addEventListener('click', function (e) {
                 if (e.ctrlKey || e.metaKey)
                     return;
                 e.preventDefault();
@@ -206,18 +204,18 @@ function initializeLinks(page) {
     });
 }
 
-window.addEventListener("popstate", function (event) {
+window.addEventListener('popstate', function (event) {
     // TODO: check state and pop pages if possible, rather than reloading.
     window.location = window.location; // this reloads the page.
 });
 
 window.onload = function () {
-    initializeLinks(document.querySelector(".page"));
-    search(document.querySelector("#search"));
-    displayNetwork(document.querySelector(".page"));
+    initializeLinks(document.querySelector('.page'));
+    search(document.querySelector('#search'));
+    displayNetwork(document.querySelector('.page'));
 
     uri = URI(window.location);
-    if (uri.hasQuery("note")) {
+    if (uri.hasQuery('note')) {
         stacks = uri.query(true).note;
         if (!Array.isArray(stacks))
             stacks = [stacks];
