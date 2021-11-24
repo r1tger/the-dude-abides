@@ -101,9 +101,8 @@ class Zettelkasten(object):
         G = self.get_graph()
         paths = []
         for path in nx.all_shortest_paths(G, s, t, weight='weight'):
-            # TODO: don't generate html filename here, use template
-            paths.append(['%2F{}.html'.format(p.get_id())
-                          for p in path[::-1]])
+            # Reverse and convert to list
+            paths.append(path[::-1])
         return paths
 
     def get_notes_from(self, v, entry_notes):

@@ -220,5 +220,10 @@ class Note(object):
                 return f'|{"%02d" % b}| {flag}[{n.get_title()}]({n.get_id()})'
             Note._env.filters['format_note'] = format_note
 
+            def path_to_url(path):
+                return '?note=' + '&amp;note='.join([f'%2F{n.get_id()}.html'
+                                                     for n in path])
+            Note._env.filters['path_to_url'] = path_to_url
+
         # Render the template
         return Note._env.get_template(template).render(**kwargs)

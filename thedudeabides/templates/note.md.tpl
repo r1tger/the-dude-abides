@@ -14,7 +14,7 @@
 {% for b, note, paths in lattices_to %}
 {{ loop.index }}. {{ note|format_note(b, exit_notes) }}
 {% for path in paths %}
-[[{{ loop.index }}](?note={{ path|join('&amp;note=') }})]{% if not loop.last %}, {% endif %}
+[[{{ loop.index }}]({{ path|path_to_url }})]{% if not loop.last %}, {% endif %}
 
 {% endfor %}
 {% endfor %}
@@ -27,7 +27,7 @@
 {% for b, note, paths in lattices_from %}
 {{ loop.index }}. {{ note|format_note(b, exit_notes) }}
 {% for path in paths %}
-[[{{ loop.index }}](?note={{ path|join('&amp;note=') }})]{% if not loop.last %}, {% endif %}
+[[{{ loop.index }}]({{ path|path_to_url }})]{% if not loop.last %}, {% endif %}
 
 {% endfor %}
 {% endfor %}
