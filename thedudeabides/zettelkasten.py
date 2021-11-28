@@ -582,7 +582,6 @@ class Zettelkasten(object):
 
         """
         G = self.get_graph()
-        # exit_notes = sorted([u for _, u in self._exit_notes()], reverse=True)
         entry_notes = sorted([u for _, u in self._entry_notes()], reverse=True)
         exit_notes = sorted([u for _, u in self._exit_notes()], reverse=True)
         # Write all Notes to disk
