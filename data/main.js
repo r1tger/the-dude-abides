@@ -1,80 +1,75 @@
-/* Simplified from: https://github.com/jethrokuan/cortex */
+//
 
-let pages = [window.location.pathname];
-let animationLength = 200;
-let rows = [];
+/*
+ */
+function initialise(page) {
+    // Create a network of associated notes
+    network(page);
+    // Mark any links as already opened
+    urls = $('.page').map(function(index, page) {
+        return $(page).data('url');
+    });
+    $(page).find('a').each(async function(index, a) {
+        if (-1 != $.inArray(URI(a.href).pathname(), urls))
+            $(a).toggleClass('highlight');
+    });
+    // Scroll to the added page
+    page.scrollIntoView(/*{behavior: 'smooth'}*/);
+    page.animate([{ opacity: 0 }, { opacity: 1 }], 200);
 
-function stackNote(href, level, animate=true) {
-    level = Number(level) || pages.length;
-    uri = URI(window.location);
-    stacks = [];
-    if (uri.hasQuery('note')) {
-        stacks = uri.query(true).note;
-        if (!Array.isArray(stacks)) {
-            stacks = [stacks];
+    // Catch any onclick events on the page
+    $(page).click(function(event) {
+        try {
+            url = URI(event.target.href);
+            // Only process "internal" links with format: /234.html
+            if (!/^\/[0-9]+\.html/.test(url.pathname()))
+                return true;
+        } catch {
+            // No valid URL found
+            return false;
         }
-        stacks = stacks.slice(0, level - 1);
-    }
-    // If href is already in stack, do not open again
-    if (-1 != stacks.indexOf(href.path()))
-        return false;
-    stacks.push(href.path());
-    uri.setQuery('note', stacks);
-
-    old_stacks = stacks.slice(0, level - 1);
-    state = { stacks: old_stacks, level: level };
-    window.history.pushState(state, '', uri.href());
-
-    // Fetch note
-    const request = new Request(href.path());
-    fetch(request)
-        .then((response) => response.text())
-        .then((text) => {
-            // Render the note
-            displayNote(href, text, level);
+        event.preventDefault();
+        // Check if page is already loaded
+        pages = $('.page');
+        has_url = $(pages).is(function(index, page) {
+            return (url.pathname() == $(page).data('url'));
         });
-    return true;
+        if (has_url)
+            return false;
+        // Load the new page
+        load(url, this);
+    });
 }
 
-function unstackNotes(level) {
-    let container = document.querySelector('.grid');
-    let children = Array.prototype.slice.call(container.children);
+/* Load a single or multiple URLs. If multiple URLs are provided, they're
+ * loaded in order.
+ */
+function load(urls, currentPage) {
+    urls = $.makeArray(urls);
+    if (0 == urls.length)
+        return true;
 
-    for (let i = level; i < pages.length; i++)
-        container.removeChild(children[i]);
-    pages = pages.slice(0, level);
+    url = urls.shift();
+    $.ajax({url: url}).done(function(data) {
+        // Delete all pages after this page
+        if (currentPage)
+            $(pages).slice($(pages).index(currentPage) + 1).remove();
+        // Add page to the grid
+        $('.grid').append($(data).find('.page'));
+        page = $('.page').last()[0];
+        $(page).data('url', url.pathname());
+        // Initialise the new page
+        initialise(page);
+        // Load the remaining URLs
+        load(urls);
+    });
 }
 
-function displayNote(href, text, level, animate=true) {
-    unstackNotes(level);
-    let container = document.querySelector('.grid');
-    let fragment = document.createElement('template');
-    fragment.innerHTML = text;
-
-    let element = fragment.content.querySelector('.page');
-    container.appendChild(element);
-    pages.push(href.path());
-
-    setTimeout(
-        function (element, level) {
-            element.dataset.level = level + 1;
-            initializeLinks(element);
-            displayNetwork(element);
-            // Load network
-            element.scrollIntoView();
-            if (animate) {
-                element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
-            }
-        }.bind(null, element, level),
-        10
-    );
-}
-
-function displayNetwork(page) {
-    if (!page.querySelector('.network'))
-        return;
+function network(page) {
+    if (0 == $(page).find('.network').length)
+        return false;
     // Render a directed graph using vis-network
-    var options = {
+    options = {
         autoResize: true,
         width: '100%',
         height: '100%',
@@ -102,124 +97,33 @@ function displayNetwork(page) {
             stabilization: { iterations: 150 },
         },
     };
-    nodes = JSON.parse(page.querySelector('.nodes').text);
-    edges = JSON.parse(page.querySelector('.edges').text);
-    let network = new vis.Network(
-        page.querySelector('.network'),
+    nodes = JSON.parse($(page).find('.nodes').text());
+    edges = JSON.parse($(page).find('.edges').text());
+    var network = new vis.Network(
+        $(page).find('.network')[0],
         {
             nodes: nodes,
             edges: edges
         },
         options
     );
-    network.level = page.dataset.level;
-    network.on('doubleClick', function(params) {
-        if (0 == params.nodes.length)
-            return;
-        href = URI('/' + params.nodes[0] + '.html');
-        stackNote(href, this.level);
-    });
+    // network.on('doubleClick', function(params) {
+    //     if (0 == params.nodes.length)
+    //         return;
+    //     load(URI('/' + params.nodes[0] + '.html'))
+    // });
 }
 
-function fetchNotes(hrefs) {
-    // number of Ajax requests to wait for
-    var count = hrefs.length;
-    // results of individual requests get stuffed here
-    var results = [];
-
-    // Empty urls don't display anything
-    hrefs.forEach(function(href, index) {
-        const request = new Request(href);
-        fetch(request)
-            .then((response) => response.text())
-            .then((text) => {
-                results[index] = text;
-                count = count - 1;
-                if (0 === count) {
-                    results.forEach(function(text, index) {
-                        displayNote(URI(hrefs[index]), text, index + 1);
-                    });
-                }
-            });
-        });
-}
-
-function search(searchField) {
-    if (!searchField)
-        return;
-    // Attach an event listener to the search field
-    searchField.addEventListener('keyup', function (e) {
-        if (e.ctrlKey || e.metaKey)
-            return;
-        e.preventDefault();
-
-        // Filter value to search on
-        token = this.value.toLowerCase();
-        if (token.length < 3)
-            token = 'f3b87388-984d-479b-bcec-31b67a2256fd';
-        // Populate list of rows once (performance)
-        if (0 == rows.length) {
-            tbody = document.querySelector('#tokens');
-            rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
-        }
-        // Hide or show table row based on filter value
-        rows.forEach(async function (tr) {
-            tr.style.display = 'none';
-            if (tr.dataset.token.toLowerCase().indexOf(token) > -1)
-                tr.style.display = '';
-        });
-    });
-}
-
-function initializeLinks(page) {
-    links = Array.prototype.slice.call(page.querySelectorAll('a'));
-    links.forEach(async function (element) {
-        var rawHref = element.getAttribute('href');
-        element.dataset.level = page.dataset.level;
-        if (
-            rawHref &&
-            !(
-                rawHref.indexOf('http://') === 0 ||
-                rawHref.indexOf('https://') === 0 ||
-                rawHref.indexOf('#') === 0 ||
-                rawHref.includes('.pdf') ||
-                rawHref.includes('.svg')
-            ) &&
-            !rawHref.includes('note=')
-        ) {
-            if (-1 != pages.indexOf('/' + rawHref)) {
-                element.className = 'highlight'
-            }
-            element.addEventListener('click', function (e) {
-                if (e.ctrlKey || e.metaKey)
-                    return;
-                e.preventDefault();
-                href = URI(element.href);
-                if (!stackNote(href, this.dataset.level)) {
-                    // blink element
-                    element.animate([{ opacity: 0 }, { opacity: 1 }], animationLength);
-                }
-            });
-        }
-    });
-}
-
-window.addEventListener('popstate', function (event) {
-    // TODO: check state and pop pages if possible, rather than reloading.
-    window.location = window.location; // this reloads the page.
-});
-
-window.onload = function () {
-    initializeLinks(document.querySelector('.page'));
-    search(document.querySelector('#search'));
-    displayNetwork(document.querySelector('.page'));
-
+/*
+ */
+$(document).ready(function() {
+    // Load any notes provided as part of the URL
     uri = URI(window.location);
     if (uri.hasQuery('note')) {
-        stacks = uri.query(true).note;
-        if (!Array.isArray(stacks))
-            stacks = [stacks];
+        notes = uri.query(true).note;
         // Fetch all notes defined in the url
-        fetchNotes(stacks);
+        load($(notes).map(function(index, url) { return URI(url); }));
     }
-};
+    // Initialise the first page
+    initialise($('.page').first()[0]);
+});
