@@ -1,10 +1,13 @@
 //
+rows = [];
 
 /*
  */
 function initialise(page) {
     // Create a network of associated notes
     network(page);
+    //
+    search(page);
     // Mark any links as already opened
     urls = $('.page').map(function(index, page) {
         return $(page).data('url');
@@ -14,7 +17,7 @@ function initialise(page) {
             $(a).toggleClass('highlight');
     });
     // Scroll to the added page
-    page.scrollIntoView(/*{behavior: 'smooth'}*/);
+    page.scrollIntoView({behavior: 'smooth'});
     page.animate([{ opacity: 0 }, { opacity: 1 }], 200);
 
     // Catch any onclick events on the page
@@ -112,6 +115,31 @@ function network(page) {
     //         return;
     //     load(URI('/' + params.nodes[0] + '.html'))
     // });
+}
+
+function search(page) {
+    if (0 == $(page).find('#search').length)
+        return;
+    // Attach an event listener to the search field
+    $(page).find('#search').keyup(function (e) {
+        e.preventDefault();
+        // Filter value to search on
+        token = this.value.toLowerCase();
+        if (token.length < 3)
+            token = 'f3b87388-984d-479b-bcec-31b67a2256fd';
+        if (0 == rows.length) {
+            tbody = document.querySelector('#tokens');
+            // rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+            rows = $('#tokens').find('tr');
+        }
+        // Hide or show table row based on filter value
+        rows.each(async function (index, tr) {
+            // Do not use .hide() due to performance reasons
+            tr.style.display = 'none';
+            if (tr.dataset.token.toLowerCase().indexOf(token) > -1)
+                tr.style.display = '';
+        });
+    });
 }
 
 /*
