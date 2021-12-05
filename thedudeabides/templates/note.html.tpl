@@ -22,6 +22,7 @@
                 <!--<li class="navigation-item"><a class="navigation-link" href="tags.html">Tags</a></li>-->
                 <li class="navigation-item"><a class="navigation-link" href="https://sive.rs/books" target="_blank">Book notes&hellip;</a></li>
                 <li class="navigation-item"><a class="navigation-link" href="https://rr.reuser.biz" target="_blank">OSINT&hellip;</a></li>
+                <li class="navigation-item" id="spinner" style="display: none;">Loading</li>
             </ul>
         </nav>
         <div class="grid-container">

@@ -462,6 +462,7 @@ class Zettelkasten(object):
         """
         s = self.get_note(s)
         G = nx.ego_graph(self.get_graph().reverse(), s, depth, center=False)
+        log.info(f'Found {len(G.nodes())} notes')
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
                                 notes=[s] + list(G)))
 
@@ -475,6 +476,7 @@ class Zettelkasten(object):
         """
         s = self.get_note(s)
         G = nx.ego_graph(self.get_graph(), s, depth, center=False)
+        log.info(f'Found {len(G.nodes())} notes')
         return self.create_note(s.get_title(), Note.render('collected.md.tpl',
                                 notes=[s] + list(G)))
 

@@ -145,6 +145,10 @@ function search(page) {
 /*
  */
 $(document).ready(function() {
+    // Show a spinner when loading pages
+    $(document)
+        .ajaxStart(function() { $('#spinner').show(); })
+        .ajaxStop(function() { $('#spinner').hide(); });
     // Load any notes provided as part of the URL
     uri = URI(window.location);
     if (uri.hasQuery('note')) {
