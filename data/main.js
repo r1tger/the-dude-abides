@@ -17,7 +17,7 @@ function initialise(page) {
             $(a).toggleClass('highlight');
     });
     // Scroll to the added page
-    page.scrollIntoView({behavior: 'smooth'});
+    page.scrollIntoView(/*{behavior: 'smooth'}*/);
     page.animate([{ opacity: 0 }, { opacity: 1 }], 200);
 
     // Catch any onclick events on the page
