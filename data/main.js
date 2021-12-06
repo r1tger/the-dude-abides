@@ -110,11 +110,14 @@ function network(page) {
         },
         options
     );
-    // network.on('doubleClick', function(params) {
-    //     if (0 == params.nodes.length)
-    //         return;
-    //     load(URI('/' + params.nodes[0] + '.html'))
-    // });
+    network.on('doubleClick', function(params) {
+        if (0 == params.nodes.length)
+            return;
+        event = $.Event('click');
+        event.target = {href: '/' + params.nodes[0] + '.html'};
+        // Raise click event
+        $(params.event.target).trigger(event);
+    });
 }
 
 function search(page) {
