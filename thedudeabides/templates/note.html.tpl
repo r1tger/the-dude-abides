@@ -27,7 +27,7 @@
         </nav>
         <div class="grid-container">
             <div class="grid">
-                <div class="page" data-level="1">
+                <div class="page" data-level="1" data-note="{{ ident }}">
                     <div class="content">
                         <h1>{% if display_id %}{{ ident }}. {% endif %}{{ title }}</h1>
                         {{ content }}

@@ -39,9 +39,18 @@ function initialise(page) {
         });
         if (has_url)
             return false;
+        $('.page').each(function(index, page) {
+
+        });
         // Load the new page
         load(url, this);
     });
+}
+
+/* Create a new URL for use in events and history.
+ */
+function create_url(note) {
+    return '/' + note + '.html';
 }
 
 /* Load a single or multiple URLs. If multiple URLs are provided, they're
@@ -49,8 +58,15 @@ function initialise(page) {
  */
 function load(urls, currentPage) {
     urls = $.makeArray(urls);
-    if (0 == urls.length)
+    if (0 == urls.length) {
+        notes = $.makeArray($('.page').map(function(i, page) {
+            return create_url(page.dataset.note);
+        }));
+        notes.shift();
+        // Update the address bar to reflect opened pages
+        history.pushState([], '', URI().query({ note: notes }));
         return true;
+    }
 
     url = urls.shift();
     $.ajax({url: url}).done(function(data) {
@@ -114,7 +130,7 @@ function network(page) {
         if (0 == params.nodes.length)
             return;
         event = $.Event('click');
-        event.target = {href: '/' + params.nodes[0] + '.html'};
+        event.target = { href: create_url(params.nodes[0]) };
         // Raise click event
         $(params.event.target).trigger(event);
     });
@@ -155,7 +171,7 @@ $(document).ready(function() {
     // Load any notes provided as part of the URL
     uri = URI(window.location);
     if (uri.hasQuery('note')) {
-        notes = uri.query(true).note;
+        notes = $.makeArray(uri.query(true).note);
         // Fetch all notes defined in the url
         load($(notes).map(function(index, url) { return URI(url); }));
     }
