@@ -147,6 +147,15 @@ input[type='text']:focus { border: .1rem solid #d81e05; }
     box-shadow: 0 0.8rem 1.4rem rgba(0, 0, 0, 0.25);
 }
 
+.full-screen {
+    z-index: 9999;
+    top: 5%;
+    left: 5%;
+    width: 90%;
+    height: 90%;
+    position: absolute;
+}
+
 @media only screen and (min-width: 640px) {
     .page { width: 63rem; }
 }

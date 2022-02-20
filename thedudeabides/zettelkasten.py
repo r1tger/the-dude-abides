@@ -600,6 +600,14 @@ class Zettelkasten(object):
                         exit_notes=exit_notes))
             yield(note)
 
+    def _split_sentence(self, s):
+        """ """
+        if len(s) < 14:
+            return s
+        t = s.split(' ')
+        c = len(t) // 2
+        return ' '.join(t[:c]) + '\n' + ' '.join(t[c:])
+
     def _get_vis_js(self, G, note=False, depth=1):
         """ """
         ego = G
@@ -608,7 +616,7 @@ class Zettelkasten(object):
         nodes = []
         for node in ego.nodes():
             n = {'id': node.get_id(), 'title': node.get_title(),
-                 'label': str(node.get_id()), 'value': G.in_degree(node)}
+                 'label': self._split_sentence(node.get_title())}
             if node == note:
                 n['color'] = '#d81e05'
             nodes.append(n)

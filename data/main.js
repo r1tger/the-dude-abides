@@ -93,12 +93,9 @@ function network(page) {
         width: '100%',
         height: '100%',
         nodes: {
-            shape: 'circle',    // dot
-            shadow: true,
-            scaling: {
-                min: 0,
-                max: 30
-            },
+            shape: 'dot',
+            size: 15,
+            shadow: true
         },
         edges: {
             arrows: 'to'
@@ -169,7 +166,7 @@ $(document).ready(function() {
         .ajaxStart(function() { $('#spinner').show(); })
         .ajaxStop(function() { $('#spinner').hide(); });
     // Load any notes provided as part of the URL
-    uri = URI(window.location);
+    uri = URI();
     if (uri.hasQuery('note')) {
         notes = $.makeArray(uri.query(true).note);
         // Fetch all notes defined in the url
@@ -177,4 +174,18 @@ $(document).ready(function() {
     }
     // Initialise the first page
     initialise($('.page').first()[0]);
+});
+
+/* Someting happened to the history ...
+ */
+$(window).bind('popstate', function(event) {
+    console.log('popstate: ' + URI());
+    $('.grid').empty();
+    // Load any notes provided as part of the URL
+    uri = URI();
+    if (uri.hasQuery('note')) {
+        notes = $.makeArray(uri.query(true).note);
+        // Fetch all notes defined in the url
+        load($(notes).map(function(index, url) { return URI(url); }));
+    }
 });
