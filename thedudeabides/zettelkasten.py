@@ -247,10 +247,10 @@ class Zettelkasten(object):
         """
         """
         # Find all (weakly) connected components and find average path length
-        C = mean([nx.average_shortest_path_length(G.subgraph(c).copy(),
-                  weight=weight) for c in nx.weakly_connected_components(G)])
+        C = [nx.average_shortest_path_length(G.subgraph(c).copy(),
+             weight=weight) for c in nx.weakly_connected_components(G)]
         # Take the mean for each component
-        return round(C)
+        return round(mean([c for c in C if c > 0]))
 
     def create_note(self, title='', body=''):
         """Create a new Note using a template. Does not write the note to disk.
