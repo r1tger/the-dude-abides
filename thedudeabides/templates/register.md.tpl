@@ -13,7 +13,7 @@ date: "{{ date }}"
 |Aantal woorden     |{{ '{:,}'.format(stats.word_count) }} |{{ stats.avg_word_count }} |
 |Ingangnotities     |{{ '{:,}'.format(stats.nr_entry) }}   |{{ stats.nr_entry_perc }}% |
 |Uitgangnotities (Ω)|{{ '{:,}'.format(stats.nr_exit) }}    |{{ stats.nr_exit_perc }}%  |
-|Lengte van paden   |                                      |{{ stats.avg_path_length }}|
+|Lengte van paden   |n.v.t.                                |{{ stats.avg_path_length }}|
 {% endif %}
 
 ## Recent
