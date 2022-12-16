@@ -13,6 +13,7 @@ from random import sample, shuffle
 from pprint import pprint
 from re import findall
 from json import dumps
+from statistics import mean
 
 from markdown_it import MarkdownIt
 from mdit_py_plugins.footnote import footnote_plugin
@@ -237,8 +238,19 @@ class Zettelkasten(object):
         stats['nr_exit'] = len(self._exit_notes())
         stats['nr_exit_perc'] = int((stats['nr_exit'] /
                                      stats['nr_vertices']) * 100)
+        stats['avg_path_length'] = self.average_shortest_path_length(G)
+
         # Statistics
         return stats
+
+    def average_shortest_path_length(self, G, weight='weight'):
+        """
+        """
+        # Find all (weakly) connected components and find average path length
+        C = mean([nx.average_shortest_path_length(G.subgraph(c).copy(),
+                  weight=weight) for c in nx.weakly_connected_components(G)])
+        # Take the mean for each component
+        return round(C)
 
     def create_note(self, title='', body=''):
         """Create a new Note using a template. Does not write the note to disk.
@@ -527,13 +539,11 @@ class Zettelkasten(object):
         # Days since COVID started in NL
         days_covid = (t - date.fromisoformat('2020-02-27')).days
         # Days till [event]
-        days_hh = (date.fromisoformat('2022-02-11') - t).days
-        days_mch = (date.fromisoformat('2022-07-22') - t).days
+        days_hh = (date.fromisoformat('2023-02-10') - t).days
         # Suggestions
         contents = Note.render('today.md.tpl', days_from=days_from,
                                days_to=days_to, milestone=milestone,
                                days_covid=days_covid, days_hh=days_hh,
-                               days_mch=days_mch,
                                stats=self.get_stats(),
                                inbox=len(self._inbox()),
                                suggestions=self._suggestions(days), days=days,

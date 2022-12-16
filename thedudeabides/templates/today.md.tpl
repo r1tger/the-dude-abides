@@ -10,8 +10,7 @@ date: "{{ date }}"
 
 ---
 
-{{ days_hh }} dagen tot Hacker Hotel 2022
-{{ days_mch }} dagen tot May Contain Hackers (MCH2022)
+{{ days_hh }} dagen tot Hacker Hotel 2023
 
 ---
 
