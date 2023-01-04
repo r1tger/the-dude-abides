@@ -148,15 +148,15 @@ def render(zk, output, no_random, days):
     # Write the register to disk
     with open(join(output, 'register.html'), 'w') as f:
         f.write(zk.register(days).to_html())
+    # Write the groups to disk
+    with open(join(output, 'groups.html'), 'w') as f:
+        f.write(zk.groups().to_html())
     # Write the tags to disk
     with open(join(output, 'tags.html'), 'w') as f:
         f.write(zk.tags().to_html())
     # Write the search page to disk
     with open(join(output, 'search.html'), 'w') as f:
         f.write(zk.inverted_index())
-    # Write the graph page to disk
-    with open(join(output, 'graph.html'), 'w') as f:
-        f.write(zk.vis_js_network())
     log.info('Completed rendering of notes')
 
 

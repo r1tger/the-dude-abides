@@ -1,0 +1,5 @@
+env/
+*.*.swp
+thedudeabides.egg-info/
+zettelkasten/
+__pycache__/

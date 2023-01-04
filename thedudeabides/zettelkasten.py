@@ -44,8 +44,9 @@ class Zettelkasten(object):
         if not isdir(zettelkasten):
             raise ValueError('Invalid Zettelkasten directory provided')
         self.zettelkasten = zettelkasten
-        self.G = None
-        self.N = {}
+        self.G = None    # Cached Graph
+        self.N = {}      # Cached Notes
+        self.C = None    # Cached Communities
         # Set up Markdown parser
         self.md = MarkdownIt('default').use(footnote_plugin).use(wordcount_plugin, store_text=True)
         self.md.add_render_rule('link_open', Zettelkasten.render_link_open)
@@ -356,14 +357,6 @@ class Zettelkasten(object):
         return Note.render('note.html.tpl', title='Zoeken',
                            display_id=False, ident=0, content=content)
 
-    def vis_js_network(self):
-        """ """
-        nodes, edges = self._get_vis_js(self.get_graph())
-        return Note.render('note.html.tpl', title='Netwerk',
-                           display_id=False, display_graph=True, ident=0,
-                           nodes=dumps(nodes, indent=True),
-                           edges=dumps(edges, indent=True))
-
     def index(self):
         """Create a markdown representation of the index of notes.
 
@@ -413,6 +406,39 @@ class Zettelkasten(object):
                                date=datetime.utcnow().isoformat())
         return Note(self.md, 0, 'Register', contents=contents,
                     display_id=False)
+
+    def _groups(self):
+        """Group Notes by community.
+
+        :returns: Tuple of notes sorted by most connected Note
+
+        """
+        G = self.get_graph()
+        # Cluster nodes based on community
+        from networkx.algorithms.community import greedy_modularity_communities
+        communities = sorted(greedy_modularity_communities(G,
+                             weight='weight'), key=len, reverse=True)
+        groups = []
+        for community in communities:
+            if len(community) == 1:
+                continue
+            # Get a template-ready list of Notes
+            g = sorted([(G.in_degree(n), n) for n in community],
+                       key=itemgetter(0), reverse=True)
+            groups.append((g[0][1].get_title(), g))
+        return groups
+
+    def groups(self):
+        """Create a grouping of all notes, sorted by most connected Note.
+
+        :returns Note with groups
+
+        """
+        exit_notes = [n for b, n in self._exit_notes()]
+        contents = Note.render('groups.md.tpl', notes=self._groups(),
+                               exit_notes=exit_notes,
+                               date=datetime.utcnow().isoformat())
+        return Note(self.md, 0, contents=contents, display_id=False)
 
     def _tags(self):
         """Collect all notes and group by tag.
@@ -618,11 +644,11 @@ class Zettelkasten(object):
         c = len(t) // 2
         return ' '.join(t[:c]) + '\n' + ' '.join(t[c:])
 
-    def _get_vis_js(self, G, note=False, depth=1):
+    def _get_network(self, note=False, depth=1):
         """ """
-        ego = G
+        ego = self.get_graph()
         if note:
-            ego = nx.ego_graph(G, note, depth, undirected=True)
+            ego = nx.ego_graph(self.get_graph(), note, depth, undirected=True)
         nodes = []
         for node in ego.nodes():
             n = {'id': node.get_id(), 'title': node.get_title(),
@@ -633,6 +659,36 @@ class Zettelkasten(object):
         edges = []
         for f, t in ego.edges():
             edges.append({'from': f.get_id(), 'to': t.get_id()})
+        return (nodes, edges)
+
+    def _get_community(self, s):
+        """Get the community for this note, as nodes and edges.
+        """
+        G = self.get_graph()
+        # Cluster nodes based on community
+        if self.C is None:
+            from networkx.algorithms.community import greedy_modularity_communities
+            self.C = sorted(greedy_modularity_communities(G,
+                            weight='weight'), key=len, reverse=True)
+
+        # Is note in a specific community?
+        nodes, edges = [], []
+        for community in self.C:
+            if s not in community:
+                continue
+            for node in community:
+                if node in G.predecessors(s):
+                    continue
+                n = {'id': node.get_id(), 'title': node.get_title(),
+                     'label': self._split_sentence(node.get_title())}
+                if node == s:
+                    n['color'] = '#d81e05'
+                nodes.append(n)
+            # Does the note have a connection to any of the other notes?
+            for t in community:
+                if not nx.has_path(G, s, t):
+                    continue
+                edges.append({'from': s.get_id(), 'to': t.get_id()})
         return (nodes, edges)
 
     def to_html(self, note):
@@ -646,7 +702,8 @@ class Zettelkasten(object):
 
         """
         G = self.get_graph()
-        nodes, edges = self._get_vis_js(G, note)
+        nodes, edges = self._get_network(note)
+        # nodes, edges = self._get_community(note)
         return Note.render('note.html.tpl', title=note.get_title(),
                            display_id=note.display_id, ident=note.get_id(),
                            nodes=dumps(nodes, indent=True),

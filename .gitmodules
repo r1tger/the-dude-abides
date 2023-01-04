@@ -1,6 +1,0 @@
-[submodule "zettels/themes/hugo-kiera"]
-	path = zettels/themes/hugo-kiera
-	url = https://github.com/funkydan2/hugo-kiera.git
-[submodule "zettels/themes/Zettels"]
-	path = zettels/themes/Zettels
-	url = https://github.com/crisrojas/Zettels
