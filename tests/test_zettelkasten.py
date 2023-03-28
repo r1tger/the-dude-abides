@@ -24,7 +24,11 @@ date: "2020-08-09T00:00:00.000000"
 
 In pulvinar varius ante. Nulla at lobortis tellus. Donec vulputate ex auctor
 imperdiet elementum. Sed blandit ante vel ipsum facilisis, sed laoreet elit
-malesuada. Nam a interdum lectus. Pellentesque semper nisi ac ante interdum
+malesuada.
+
+$\alpha = \frac{1}{2}$
+
+Nam a interdum lectus. Pellentesque semper nisi ac ante interdum
 pellentesque. Nulla a felis in arcu lobortis viverra aliquam eu odio.
 """
 

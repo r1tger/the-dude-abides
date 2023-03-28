@@ -18,6 +18,7 @@ from statistics import mean
 from markdown_it import MarkdownIt
 from mdit_py_plugins.footnote import footnote_plugin
 from mdit_py_plugins.wordcount import wordcount_plugin
+from mdit_py_plugins.texmath import texmath_plugin
 
 import logging
 log = logging.getLogger(__name__)
@@ -48,7 +49,12 @@ class Zettelkasten(object):
         self.N = {}      # Cached Notes
         self.C = None    # Cached Communities
         # Set up Markdown parser
-        self.md = MarkdownIt('default').use(footnote_plugin).use(wordcount_plugin, store_text=True)
+        self.md = MarkdownIt('default')
+        # Load plugins
+        self.md.use(footnote_plugin)
+        self.md.use(wordcount_plugin, store_text=True)
+        self.md.use(texmath_plugin)
+        # Catch any href's to convert to local notes
         self.md.add_render_rule('link_open', Zettelkasten.render_link_open)
 
     @staticmethod
@@ -239,7 +245,8 @@ class Zettelkasten(object):
         stats['nr_exit'] = len(self._exit_notes())
         stats['nr_exit_perc'] = int((stats['nr_exit'] /
                                      stats['nr_vertices']) * 100)
-        stats['avg_path_length'] = self.average_shortest_path_length(G)
+        # stats['avg_path_length'] = self.average_shortest_path_length(G)
+        stats['avg_path_length'] = 1
 
         # Statistics
         return stats

@@ -6,7 +6,7 @@ rows = [];
 function initialise(page) {
     // Create a network of associated notes
     network(page);
-    //
+    // If a search box is found, add an event listener
     search(page);
     // Mark any links as already opened
     urls = $('.page').map(function(index, page) {
@@ -15,6 +15,10 @@ function initialise(page) {
     $(page).find('a').each(async function(index, a) {
         if (-1 != $.inArray(URI(a.href).pathname(), urls))
             $(a).toggleClass('highlight');
+    });
+    // Render any texmath equations
+    $(page).find('eq').each(function(index, eq) {
+        katex.render(eq.textContent, eq);
     });
     // Scroll to the added page
     page.scrollIntoView(/*{behavior: 'smooth'}*/);
