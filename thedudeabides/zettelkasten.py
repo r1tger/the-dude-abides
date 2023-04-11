@@ -406,15 +406,17 @@ class Zettelkasten(object):
         """
         exit_notes = [n for b, n in self._exit_notes()]
         entry_notes = [n for b, n in self._entry_notes()]
+        moc_notes = [n for n, _ in self._map_of_content()]
         contents = Note.render('register.md.tpl', notes=self._register(),
                                stats=self.get_stats(), exit_notes=exit_notes,
                                entry_notes=entry_notes,
                                recent_notes=self._get_notes_date(days),
+                               moc_notes=self._get_notes(moc_notes),
                                date=datetime.utcnow().isoformat())
         return Note(self.md, 0, 'Register', contents=contents,
                     display_id=False)
 
-    def _groups(self):
+    def _map_of_content(self):
         """Group Notes by community.
 
         :returns: Tuple of notes sorted by most connected Note
@@ -432,20 +434,22 @@ class Zettelkasten(object):
             # Get a template-ready list of Notes
             g = sorted([(G.in_degree(n), n) for n in community],
                        key=itemgetter(0), reverse=True)
-            groups.append((g[0][1].get_title(), g))
+            groups.append((g[0][1], g))
         return groups
 
-    def groups(self):
+    def map_of_content(self):
         """Create a grouping of all notes, sorted by most connected Note.
 
-        :returns Note with groups
+        :returns tuple(Note with groups)
 
         """
         exit_notes = [n for b, n in self._exit_notes()]
-        contents = Note.render('groups.md.tpl', notes=self._groups(),
-                               exit_notes=exit_notes,
-                               date=datetime.utcnow().isoformat())
-        return Note(self.md, 0, contents=contents, display_id=False)
+        for note, notes in self._map_of_content():
+            contents = Note.render('moc.md.tpl', note=note, notes=notes,
+                                   exit_notes=exit_notes,
+                                   date=datetime.utcnow().isoformat())
+            yield Note(self.md, note.get_id(), contents=contents,
+                       display_id=False)
 
     def _tags(self):
         """Collect all notes and group by tag.
@@ -698,7 +702,7 @@ class Zettelkasten(object):
                 edges.append({'from': s.get_id(), 'to': t.get_id()})
         return (nodes, edges)
 
-    def to_html(self, note):
+    def to_html(self, note, display_graph=True):
         """Convert a Note to HTML.
 
         Creates all nodes and edges for vis-network.js:
@@ -708,12 +712,11 @@ class Zettelkasten(object):
         :returns: HTML content
 
         """
-        G = self.get_graph()
         nodes, edges = self._get_network(note)
         # nodes, edges = self._get_community(note)
         return Note.render('note.html.tpl', title=note.get_title(),
                            display_id=note.display_id, ident=note.get_id(),
                            nodes=dumps(nodes, indent=True),
                            edges=dumps(edges, indent=True),
-                           display_graph=True,
+                           display_graph=display_graph,
                            content=self.md.render(note.get_body()))

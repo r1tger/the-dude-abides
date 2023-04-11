@@ -148,9 +148,11 @@ def render(zk, output, no_random, days):
     # Write the register to disk
     with open(join(output, 'register.html'), 'w') as f:
         f.write(zk.register(days).to_html())
-    # Write the groups to disk
-    with open(join(output, 'groups.html'), 'w') as f:
-        f.write(zk.groups().to_html())
+    # Write the Map of Content to disk
+    for note in zk.map_of_content():
+        filename = join(output, 'moc-{v}.html'.format(v=note.get_id()))
+        with open(filename, 'w') as f:
+            f.write(zk.to_html(note, display_graph=False))
     # Write the tags to disk
     with open(join(output, 'tags.html'), 'w') as f:
         f.write(zk.tags().to_html())

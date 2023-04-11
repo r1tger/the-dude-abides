@@ -19,7 +19,6 @@
             <ul class="navigation-list">
                 <li class="navigation-item"><a class="navigation-link" href="/">Index</a></li>
                 <li class="navigation-item"><a class="navigation-link" href="register.html">Register</a></li>
-                <li class="navigation-item"><a class="navigation-link" href="groups.html">Groepen</a></li>
                 <li class="navigation-item"><a class="navigation-link" href="search.html">Zoeken</a></li>
                 <!--<li class="navigation-item"><a class="navigation-link" href="tags.html">Tags</a></li>-->
                 <li class="navigation-item"><a class="navigation-link" href="https://sive.rs/books" target="_blank">Book notes&hellip;</a></li>

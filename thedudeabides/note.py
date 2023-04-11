@@ -93,6 +93,15 @@ class Note(object):
         """
         return self.plaintext
 
+    def get_summary(self, length=10):
+        """Get a summary of the note.
+
+        :length: Length in words of the summary
+        :returns: Note summary
+
+        """
+        return ' '.join(self.get_plaintext().split()[:length])
+
     def get_id(self):
         """Get the unique identifier for the Note.
 
@@ -213,11 +222,12 @@ class Note(object):
                                     template_dir), trim_blocks=True)
 
             # Add custom filters
-            def format_note(n, b, exit_notes=None):
+            def format_note(n, b, exit_notes=None, href=None):
                 flag = ''
                 if exit_notes is not None and n.get_id() in exit_notes:
                     flag = 'Ω '
-                return f'|{"%02d" % b}| {flag}[{n.get_title()}]({n.get_id()})'
+                href = href if href is not None else n.get_id()
+                return f'|{"%02d" % b}| {flag}[{n.get_title()}]({href})'
             Note._env.filters['format_note'] = format_note
 
             def path_to_url(path):

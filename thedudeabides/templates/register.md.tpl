@@ -24,6 +24,13 @@ date: "{{ date }}"
 * {{ note|format_note(b, exit_notes) }}
 {% endfor %}
 
+## Map of Content (MoC)
+
+{% for b, note in moc_notes %}
+{% set href = 'moc-{}.html'.format(note.get_id()) %}
+{{ loop.index }}. {{ note|format_note(b, exit_notes, href) }}
+{% endfor %}
+
 {% for k, v in notes %}
 
 ## {{ k }}

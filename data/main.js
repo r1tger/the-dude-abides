@@ -29,7 +29,7 @@ function initialise(page) {
         try {
             url = URI(event.target.href);
             // Only process "internal" links with format: /234.html
-            if (!/^\/[0-9]+\.html/.test(url.pathname()))
+            if (!/^\/(?:moc-)?[0-9]+\.html/.test(url.pathname()))
                 return true;
         } catch {
             // No valid URL found
