@@ -79,8 +79,8 @@ class Zettelkasten(object):
         if not self.exists(v):
             raise ValueError(f'No Note for ID: "{v}" found')
         # Filter by ident attribute
-        g = self.get_graph()
-        return [n for n, d in g.nodes(data=True) if d[NOTE_ID] == v].pop()
+        G = self.get_graph()
+        return [n for n, d in G.nodes(data=True) if d[NOTE_ID] == v].pop()
 
     def get_notes(self):
         """Get all available Notes from the directory.
@@ -182,7 +182,7 @@ class Zettelkasten(object):
         G = self.get_graph()
         return len(G.nodes())
 
-    def get_graph(self):
+    def _get_graph(self):
         """Create a directed graph, using each Note as a vertex and the
         Markdown links between Notes as edges. The graph is used to find
         clusters of Notes and to create a visual representation of the
@@ -195,31 +195,43 @@ class Zettelkasten(object):
         if self.G is not None:
             return self.G
 
+        log.debug('zettelkasten::_get_graph()')
+
         # Add all available Notes to the graph
-        self.G = nx.DiGraph()
-        self.G.add_nodes_from([(n, {NOTE_ID: n.get_id(),
-                                    NOTE_MDATE: n.get_mdate()})
-                               for n in self.get_notes()])
+        G = nx.DiGraph()
+        G.add_nodes_from([(n, {NOTE_ID: n.get_id(),
+                               NOTE_MDATE: n.get_mdate()})
+                          for n in self.get_notes()])
         # Get all Notes
-        for note in self.G.nodes():
+        for s in G.nodes():
             # Add edges
-            for text, v in note.get_links():
+            for text, v in s.get_links():
                 try:
+                    # Find note in G. Do not use get_note() to prevent a
+                    # circular dependency.
+                    t = [n for n, d in G.nodes(data=True)
+                         if d[NOTE_ID] == v].pop()
                     # Add edge, include link text for reference in register
-                    self.G.add_edge(note, self.get_note(v), label=text)
+                    G.add_edge(s, t, label=text)
                 except ValueError as e:
-                    log.error(f'While processing note "{note.get_id()}": {e}')
+                    log.error(f'While processing note "{s.get_id()}": {e}')
         # Update edges to combined in_degree as weight
-        for s, t in self.G.edges():
-            weight = self.G.in_degree(s) + self.G.in_degree(t)
-            self.G.add_edge(s, t, weight=weight)
+        for s, t in G.edges():
+            weight = G.in_degree(s) + G.in_degree(t)
+            G.add_edge(s, t, weight=weight)
         # Delete hidden Notes and associated Notes
         notes = set()
-        for n in [n for n in self.G.nodes() if n.is_hidden()]:
-            notes |= set(self._explore(n, self.G.predecessors))
+        for n in [n for n in G.nodes() if n.is_hidden()]:
+            notes |= set(self._explore(n, G.predecessors))
         log.debug('Deleted note: "{n}"'.format(n='", "'.join(map(str, notes))))
-        self.G.remove_nodes_from(notes)
+        G.remove_nodes_from(notes)
         # Return the populated graph
+        return G
+
+    def get_graph(self):
+        """ """
+        if self.G is None:
+            self.G = self._get_graph()
         return self.G
 
     def get_stats(self):
