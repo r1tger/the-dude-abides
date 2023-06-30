@@ -20,6 +20,9 @@ function initialise(page) {
     $(page).find('eq').each(function(index, eq) {
         katex.render(eq.textContent, eq);
     });
+    // Set window title to page title. Use h1 since <head> is not available in
+    // jQuery ...
+    document.title = $(page).find('h1').first().text();
     // Scroll to the added page
     page.scrollIntoView(/*{behavior: 'smooth'}*/);
     page.animate([{ opacity: 0 }, { opacity: 1 }], 200);
