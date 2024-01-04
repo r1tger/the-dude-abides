@@ -5,12 +5,14 @@ from .zettelkasten import Zettelkasten
 
 from click import (option, Path, pass_context, group, argument,
                    make_pass_decorator, progressbar, INT, BOOL)
-from os import environ
+from os import environ, chdir
 from os.path import join
 # from pprint import pprint
 from subprocess import run
 from sys import exit
 from datetime import date
+from http.server import SimpleHTTPRequestHandler
+from socketserver import TCPServer
 
 import logging
 log = logging.getLogger(__name__)
@@ -130,8 +132,10 @@ def index(zk):
         help='Disable generation of random lattices.')
 @option('--days', default=3, type=INT,
         help='Number of days in the past to look for notes.')
+@option('--serve', is_flag=True, default=False,
+        help='Start an HTTP server on port 8080 to view pages using a browser')
 @pass_zk
-def render(zk, output, no_random, days):
+def render(zk, output, no_random, days, serve):
     """Render all notes as HTML.
     """
     log.info('Rendering notes to "{d}"'.format(d=output))
@@ -160,6 +164,12 @@ def render(zk, output, no_random, days):
     with open(join(output, 'search.html'), 'w') as f:
         f.write(zk.inverted_index())
     log.info('Completed rendering of notes')
+    # Serve generated pages
+    if serve:
+        chdir(output)
+        with TCPServer(('localhost', 8080), SimpleHTTPRequestHandler) as httpd:
+            log.info('Starting HTTP server on http://localhost:8080')
+            httpd.serve_forever()
 
 
 @main.command()
