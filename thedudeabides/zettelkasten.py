@@ -463,6 +463,22 @@ class Zettelkasten(object):
             yield Note(self.md, note.get_id(), contents=contents,
                        display_id=False)
 
+    def tree_map(self, threshold=1):
+        """Create a CSV file which can be used to create a treemap. Uses the
+        MoC concept to create top level for each community.
+
+        :return
+
+        """
+        G = self.get_graph()
+        for note, notes in self._map_of_content():
+            deg = G.in_degree(note)
+            for c, n in notes:
+                if c < threshold or note == n:
+                    continue
+                yield([f'{note.get_title()}/{n.get_title()}', c,
+                       round((c / deg) * 100)])
+
     def _tags(self):
         """Collect all notes and group by tag.
 

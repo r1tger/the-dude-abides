@@ -3,7 +3,7 @@
 
 from .zettelkasten import Zettelkasten
 
-from click import (option, Path, pass_context, group, argument,
+from click import (option, Path, File, pass_context, group, argument,
                    make_pass_decorator, progressbar, INT, BOOL)
 from os import environ, chdir
 from os.path import join
@@ -13,6 +13,7 @@ from sys import exit
 from datetime import date
 from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
+from csv import writer
 
 import logging
 log = logging.getLogger(__name__)
@@ -133,7 +134,7 @@ def index(zk):
 @option('--days', default=3, type=INT,
         help='Number of days in the past to look for notes.')
 @option('--serve', is_flag=True, default=False,
-        help='Start an HTTP server on port 8080 to view pages using a browser')
+        help='Start an HTTP server on port 8080 to view the generated pages.')
 @pass_zk
 def render(zk, output, no_random, days, serve):
     """Render all notes as HTML.
@@ -200,6 +201,17 @@ def lattice(zk, v):
     """
     """
     edit_note(zk.lattice(v))
+
+
+@main.command()
+@argument('output', type=File('w'))
+@pass_zk
+def tree_map(zk, output):
+    """
+    """
+    log.info('Finding treemap ...')
+    csv = writer(output)
+    csv.writerows(zk.tree_map())
 
 
 if __name__ == "__main__":
